@@ -1,0 +1,19 @@
+# %f - all inputs
+# %o - output
+# %B - basename, no extension
+# Debug output:
+# : |> echo &(INC_DIR) > %o |> debug.txt
+# \ in the end wraps the line
+
+# Error if just '..' used
+&INC_DIR = ../../src
+
+CXX = clang++
+CXX_WARNINGS_DISABLE = -Wno-sign-conversion -Wno-unused-function -Wno-sign-compare -Wno-char-subscripts -Wliteral-range
+CXX_WARNINGS = -Wall -Wshadow -Wconversion $(CXX_WARNINGS_DISABLE)
+CXX_LANG = -std=c++17 -march=native -fdiagnostics-color=auto -fno-exceptions -fno-rtti
+CXX_OPT = -O0 -g -fno-omit-frame-pointer
+CXX_ARGS = $(CXX_LANG) $(CXX_OPT) $(CXX_WARNINGS)
+
+: foreach *.cpp |> $(CXX) -I&(INC_DIR) $(CXX_ARGS) -c %f -o %o |> %B.o
+: *.o |> $(CXX) %f -o %o |> driver.out

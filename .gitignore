@@ -8,3 +8,6 @@
 *.lib
 *.out
 *.exe
+
+plz-out
+.plzconfig.local

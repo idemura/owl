@@ -1,0 +1,4 @@
+[Cpp]
+CCTool = clang
+DefaultOptCflags = --std=c17 -Wall -Werror -march=native -O2 -DNDEBUG
+DefaultDbgCflags = --std=c17 -Wall -Werror -march=native -O0 -g

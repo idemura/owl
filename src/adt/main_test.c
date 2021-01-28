@@ -1,6 +1,6 @@
-#include "src/testing/testing.h"
-
 #include <stdio.h>
+
+#include "testing/testing.h"
 
 void TreeMap_test_begin();
 void TreeMap_test_put();

@@ -8,6 +8,13 @@
 *.lib
 *.out
 *.exe
+.ninja_deps
+.ninja_log
 
-plz-out
-.plzconfig.local
+*_test
+
+# Generated with generate_ninja.py
+src/ninja_build
+
+# Local build script with custom flags
+local_build.sh

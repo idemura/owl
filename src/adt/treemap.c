@@ -1,10 +1,14 @@
-#include "src/adt/treemap.h"
+#include "adt/treemap.h"
 
 static TreeNode s_none;
 
 void TreeMap_init() {
   s_none.child[0] = &s_none;
   s_none.child[1] = &s_none;
+}
+
+bool TreeMap_isNull(TreeNode *n) {
+  return n == &s_none;
 }
 
 void TreeMap_new(TreeMap *t, INodeMemMgr *nmm, size_t valueSize) {
@@ -69,6 +73,7 @@ static TreeNode *TreeMap_putRec(PutState *state, TreeNode *node) {
   if (node == &s_none) {
     TreeNode *p = state->t->nmm->allocate(sizeof(TreeNode) + state->valueSize);
     memcpy(p, &state->new, sizeof(TreeNode));
+    p->level = 1;
     state->t->size++;
     state->result = p;
     return p;
@@ -79,8 +84,21 @@ static TreeNode *TreeMap_putRec(PutState *state, TreeNode *node) {
     return node;
   }
   int b = d > 0;
-  node->child[b] = TreeMap_putRec(state, node->child[b]);
-  return node;
+  TreeNode *p = node;
+  TreeNode *c = (node->child[b] = TreeMap_putRec(state, node->child[b]));
+  if (b == 0 && node->level == c->level) {
+    p->child[0] = c->child[1];
+    c->child[1] = p;
+    p = c;
+  }
+  if (p->child[1]->level == p->child[1]->child[1]->level) {
+    c = p->child[1];
+    p->child[1] = c->child[0];
+    c->child[0] = p;
+    c->level++;
+    p = c;
+  }
+  return p;
 }
 
 void *TreeMap_put(TreeMap *t, i64 keyInt, char const *keyStr, u32 keyStrLength, size_t valueSize) {

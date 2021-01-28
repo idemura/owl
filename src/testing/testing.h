@@ -2,10 +2,8 @@
 #define TESTING_TESTING_H_
 
 #include <stddef.h>
-#include <stdlib.h>
-#include <stdnoreturn.h>
 
-#include "src/types/ints.h"
+#include "types/primitive.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -20,6 +18,7 @@ int testing_report();
   do { \
     if (!(cond)) { \
       testing_fail(__FILE__, __LINE__, #cond, __VA_ARGS__); \
+      return; \
     } \
   } while (0);
 

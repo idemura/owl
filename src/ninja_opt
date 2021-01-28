@@ -1,0 +1,4 @@
+cc_opt = -O2 -DNDEBUG
+
+include ninja_rules
+include ninja_build

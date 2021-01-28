@@ -1,4 +1,4 @@
-#include "src/adt/memmgr.h"
+#include "adt/memmgr.h"
 
 #include <memory.h>
 #include <stdlib.h>

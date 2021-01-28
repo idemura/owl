@@ -2,9 +2,10 @@
 #define ADT_TREEMAP_H_
 
 #include <memory.h>
+#include <stdbool.h>
 #include <stddef.h>
 
-#include "src/types/ints.h"
+#include "types/primitive.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,6 +37,7 @@ typedef struct {
 } TreeMap;
 
 void TreeMap_init();
+bool TreeMap_isNull(TreeNode *n);
 void TreeMap_new(TreeMap *t, INodeMemMgr *nmm, size_t valueSize);
 void TreeMap_delete();
 void *TreeMap_put(TreeMap *t, i64 keyInt, char const *keyStr, u32 keyStrLength, size_t valueSize);

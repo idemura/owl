@@ -1,9 +1,9 @@
 
-#include "src/adt/treemap.h"
+#include "adt/treemap.h"
 
 #include <stdlib.h>
 
-#include "src/testing/testing.h"
+#include "testing/testing.h"
 
 static INodeMemMgr s_nmm;
 static size_t nNodes;
@@ -34,7 +34,18 @@ void TreeMap_test_put() {
   CHECK(t.size == 0);
 
   *(int *) TreeMap_put(&t, 30, NULL, 0, 0) = 1;
+  CHECK(t.root->keyInt == 30);
+  CHECK(t.root->level == 1);
+  CHECK(TreeMap_isNull(t.root->child[0]));
+  CHECK(TreeMap_isNull(t.root->child[1]));
+
   *(int *) TreeMap_put(&t, 10, NULL, 0, 0) = 2;
+  CHECK(t.root->keyInt == 10);
+  CHECK(t.root->level == 1);
+  CHECK(TreeMap_isNull(t.root->child[0]));
+  CHECK(t.root->child[1]->keyInt == 30);
+  CHECK(t.root->child[1]->level == 1);
+
   *(int *) TreeMap_put(&t, 20, NULL, 0, 0) = 3;
 
   CHECK(t.size == 3);

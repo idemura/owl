@@ -1,11 +1,11 @@
 #ifndef ADT_TREEMAP_H
 #define ADT_TREEMAP_H
 
+#include "types/primitive.h"
+
 #include <memory.h>
 #include <stdbool.h>
 #include <stddef.h>
-
-#include "types/primitive.h"
 
 #ifdef __cplusplus
 extern "C" {

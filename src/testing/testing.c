@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// sizeof(RegEntry) * kBlockSize is a little lestt than 1024
+// (sizeof(RegEntry) * kBlockSize) is a little less than 1024
 const size_t kBlockSize = 40;
 const size_t kNumBlocks = 1024;
 const char kTestPrefix[] = "test_";

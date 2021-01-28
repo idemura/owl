@@ -1,7 +1,4 @@
-
 #include "adt/treemap.h"
-
-#include <stdlib.h>
 
 #include "testing/testing.h"
 

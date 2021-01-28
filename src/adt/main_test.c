@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include "testing/testing.h"
 
 void test_TreeMap_begin();

@@ -1,10 +1,12 @@
 #ifndef TESTING_TESTING_H
 #define TESTING_TESTING_H
 
+#include "types/primitive.h"
+
 #include <stdbool.h>
 #include <stddef.h>
-
-#include "types/primitive.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 #ifdef __cplusplus
 extern "C" {

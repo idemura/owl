@@ -84,8 +84,8 @@ class NinjaFile:
 
 
     def build_ar(self, pkg, c_files):
-      objects = [obj_name(f) for f in c_files]
-      self.fo.write("build {0}/lib{0}.a: ar {1}\n".format(pkg, ' '.join(objects)))
+      objs = [obj_name(f) for f in c_files]
+      self.fo.write("build {0}/lib{0}.a: ar {1}\n".format(pkg, ' '.join(objs)))
 
 
     def build_ld(self, pkg, is_test, c_files, deps, libs):
@@ -98,7 +98,8 @@ class NinjaFile:
           ' '.join([obj_name(f) for f in c_files]),
           ' '.join(expand_deps)))
       if len(libs) > 0:
-        self.fo.write("  libs = {}\n".format(' '.join(["-l" + l for l in libs])))
+        self.fo.write("  libs = {}\n".format(
+            ' '.join(["-l" + l for l in libs])))
 
 
     def end(self, pkg):

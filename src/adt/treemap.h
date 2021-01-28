@@ -40,7 +40,12 @@ void TreeMap_init();
 bool TreeMap_isNull(TreeNode *n);
 void TreeMap_new(TreeMap *t, INodeMemMgr *nmm, size_t valueSize);
 void TreeMap_destroy();
-void *TreeMap_put(TreeMap *t, i64 keyInt, char const *keyStr, u32 keyStrLength, size_t valueSize);
+void *TreeMap_put(
+    TreeMap *t,
+    i64 keyInt,
+    char const *keyStr,
+    u32 keyStrLength,
+    size_t valueSize);
 void *TreeMap_get(TreeMap *t, i64 keyInt, char const *keyStr, u32 keyStrLength);
 bool TreeMap_del(TreeMap *t, i64 keyInt, char const *keyStr, u32 keyStrLength);
 

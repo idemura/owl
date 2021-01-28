@@ -6,7 +6,8 @@
 #include <string.h>
 
 const size_t kNumBlocks = 1024;
-const size_t kBlockSize = 40;  // sizeof(RegEntry) * kBlockSize is a little lestt than 1024
+const size_t kBlockSize =
+    40;  // sizeof(RegEntry) * kBlockSize is a little lestt than 1024
 const char kTestPrefix[] = "test_";
 
 typedef struct {
@@ -85,7 +86,12 @@ void testing_finish() {
 }
 
 void testing_fail(
-    char const *funcName, char const *file, int line, char const *expr, char const *message, ...) {
+    char const *funcName,
+    char const *file,
+    int line,
+    char const *expr,
+    char const *message,
+    ...) {
   fprintf(stderr, "Check failed in %s %s@%d: %s\n", funcName, file, line, expr);
   va_list va;
   if (message) {

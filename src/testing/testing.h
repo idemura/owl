@@ -19,7 +19,12 @@ void testing_finish();
 
 // Internal:
 void testing_fail(
-    char const *funcName, char const *file, int line, char const *expr, char const *message, ...);
+    char const *funcName,
+    char const *file,
+    int line,
+    char const *expr,
+    char const *message,
+    ...);
 
 #define CHECK_VA(cond, ...) \
   do { \

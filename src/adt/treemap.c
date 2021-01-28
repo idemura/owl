@@ -72,7 +72,7 @@ typedef struct {
 
 static TreeNode *TreeMap_putRec(PutState *state, TreeNode *node) {
   if (node == &empty) {
-    TreeNode *p = state->t->nmm->allocate(sizeof(TreeNode) + state->valueSize);
+    TreeNode *p = state->t->nmm->allocatez(sizeof(TreeNode) + state->valueSize);
     memcpy(p, state->key, sizeof(TreeNode));
     p->level = 1;
     state->t->size++;

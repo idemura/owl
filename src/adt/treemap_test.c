@@ -8,9 +8,9 @@
 static INodeMemMgr nmm;
 static size_t nNodes;
 
-static TreeNode *allocate(size_t size) {
+static TreeNode *allocatez(size_t size) {
   ++nNodes;
-  return malloc(size);
+  return calloc(1, size);
 }
 
 static void release(TreeNode *n) {
@@ -19,7 +19,7 @@ static void release(TreeNode *n) {
 }
 
 void test_TreeMap_begin() {
-  nmm.allocate = &allocate;
+  nmm.allocatez = &allocatez;
   nmm.release = &release;
   TreeMap_init();
 }

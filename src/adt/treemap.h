@@ -24,8 +24,8 @@ typedef struct TreeNode {
 } TreeNode;
 
 typedef struct {
-  TreeNode *(*allocate)(size_t valueSize);
-  void (*release)(TreeNode *node);
+  TreeNode *(*allocatez)(size_t size);
+  void (*release)(TreeNode *n);
 } INodeMemMgr;
 
 // AA tree object.

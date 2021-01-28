@@ -1,5 +1,5 @@
-#ifndef ADT_TREEMAP_H_
-#define ADT_TREEMAP_H_
+#ifndef ADT_TREEMAP_H
+#define ADT_TREEMAP_H
 
 #include <memory.h>
 #include <stdbool.h>
@@ -39,11 +39,12 @@ typedef struct {
 void TreeMap_init();
 bool TreeMap_isNull(TreeNode *n);
 void TreeMap_new(TreeMap *t, INodeMemMgr *nmm, size_t valueSize);
-void TreeMap_delete();
+void TreeMap_destroy();
 void *TreeMap_put(TreeMap *t, i64 keyInt, char const *keyStr, u32 keyStrLength, size_t valueSize);
 void *TreeMap_get(TreeMap *t, i64 keyInt, char const *keyStr, u32 keyStrLength);
+bool TreeMap_del(TreeMap *t, i64 keyInt, char const *keyStr, u32 keyStrLength);
 
-inline size_t TreeMap_size(TreeMap *t) {
+inline static size_t TreeMap_size(TreeMap *t) {
   return t->size;
 }
 

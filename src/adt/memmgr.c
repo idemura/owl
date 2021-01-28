@@ -8,11 +8,11 @@ static void *mallocZero(size_t size) {
   return memset(p, 0, size);
 }
 
-static IMemMgr s_stdMemMgr = {
+static IMemMgr stdMemMgr = {
     .allocate = mallocZero,
     .release = free,
 };
 
 IMemMgr *getStdMemMgr() {
-  return &s_stdMemMgr;
+  return &stdMemMgr;
 }

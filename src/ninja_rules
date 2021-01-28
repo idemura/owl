@@ -1,6 +1,7 @@
 cc_tool = clang
 cc_flags = --std=c17 -Wall -Werror -march=native -I. -fPIC
 cc_extra =
+libs =
 
 rule cc
   deps = gcc
@@ -13,5 +14,5 @@ rule ar
   description = Create static library
 
 rule ld
-  command = $cc_tool -L. -o $out $in
+  command = $cc_tool -L. -o $out $in $libs
   description = Link

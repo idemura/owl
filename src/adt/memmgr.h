@@ -1,5 +1,5 @@
-#ifndef ADT_MEMMGR_H_
-#define ADT_MEMMGR_H_
+#ifndef ADT_MEMMGR_H
+#define ADT_MEMMGR_H
 
 #include "types/primitive.h"
 

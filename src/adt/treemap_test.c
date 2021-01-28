@@ -5,7 +5,7 @@
 
 #include "testing/testing.h"
 
-static INodeMemMgr s_nmm;
+static INodeMemMgr nmm;
 static size_t nNodes;
 
 static TreeNode *allocate(size_t size) {
@@ -18,19 +18,19 @@ static void release(TreeNode *n) {
   return free(n);
 }
 
-void TreeMap_test_begin() {
-  s_nmm.allocate = &allocate;
-  s_nmm.release = &release;
+void test_TreeMap_begin() {
+  nmm.allocate = &allocate;
+  nmm.release = &release;
   TreeMap_init();
 }
 
-void TreeMap_test_end() {
+void test_TreeMap_end() {
   CHECK(nNodes == 0);
 }
 
-void TreeMap_test_put() {
+void test_TreeMap_put() {
   TreeMap t;
-  TreeMap_new(&t, &s_nmm, sizeof(int));
+  TreeMap_new(&t, &nmm, sizeof(int));
   CHECK(t.size == 0);
 
   *(int *) TreeMap_put(&t, 30, NULL, 0, 0) = 1;
@@ -54,6 +54,6 @@ void TreeMap_test_put() {
   CHECK(*(int *) TreeMap_get(&t, 20, NULL, 0) == 3);
   CHECK(*(int *) TreeMap_get(&t, 30, NULL, 0) == 1);
 
-  TreeMap_delete(&t);
+  TreeMap_destroy(&t);
   CHECK(nNodes == 0);
 }

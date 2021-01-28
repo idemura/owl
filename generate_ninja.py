@@ -88,15 +88,17 @@ class NinjaFile:
       self.fo.write("build {0}/lib{0}.a: ar {1}\n".format(pkg, ' '.join(objects)))
 
 
-    def build_ld(self, pkg, is_test, c_files, libs):
-      libs.reverse()
-      expand_libs = ["{0}/lib{0}.a".format(l) for l in libs]
+    def build_ld(self, pkg, is_test, c_files, deps, libs):
+      deps.reverse()
+      expand_deps = ["{0}/lib{0}.a".format(l) for l in deps]
       bin_name = pkg + "_test" if is_test else pkg
       self.fo.write("build {}/{}: ld {} {}\n".format(
           pkg,
           bin_name,
           ' '.join([obj_name(f) for f in c_files]),
-          ' '.join(expand_libs)))
+          ' '.join(expand_deps)))
+      if len(libs) > 0:
+        self.fo.write("  libs = {}\n".format(' '.join(["-l" + l for l in libs])))
 
 
     def end(self, pkg):
@@ -157,13 +159,14 @@ def write_package(p, nf):
   for c in p.c_files:
     nf.build_cc(c)
   main, test = p.split_files()
+  libs = p.props.get("libs", [])
   if p.main:
-    nf.build_ld(p.name, False, main, p.transitive_deps)
+    nf.build_ld(p.name, False, main, p.transitive_deps, libs)
   else:
     nf.build_ar(p.name, main)
 
   if p.MAIN_TEST:
-    nf.build_ld(p.name, True, test, ["testing"] + p.transitive_deps)
+    nf.build_ld(p.name, True, test, ["testing"] + p.transitive_deps, libs)
 
   nf.end(p.name)
 

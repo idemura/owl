@@ -6,31 +6,31 @@
 #include <string.h>
 
 // (sizeof(RegEntry) * kBlockSize) is a little less than 1024
-const size_t kBlockSize = 40;
-const size_t kNumBlocks = 1024;
+const int kBlockSize = 40;
+const int kNumBlocks = 1024;
 const char kTestPrefix[] = "test_";
 
 typedef struct {
   TestCaseFP func;
-  char const *funcName;
+  const char *funcName;
   bool failed;
 } RegEntry;
 
-static unsigned nFailedChecks;
+static int nFailedChecks;
+static int regSize;
 static RegEntry *reg[kNumBlocks];
-static size_t regSize;
 
 void testing_init(int argc, char **argv) {
   // Empty
 }
 
-void testing_register(TestCaseFP func, char const *funcName) {
+void testing_register(TestCaseFP func, const char *funcName) {
   if (regSize == kBlockSize * kNumBlocks) {
     fprintf(stderr, "Test case registry memory exceeded\n");
     exit(1);
   }
-  size_t q = regSize / kBlockSize;
-  size_t r = regSize % kBlockSize;
+  int q = regSize / kBlockSize;
+  int r = regSize % kBlockSize;
   if (r == 0) {
     reg[q] = calloc(kBlockSize, sizeof(RegEntry));
   }
@@ -41,17 +41,17 @@ void testing_register(TestCaseFP func, char const *funcName) {
   regSize++;
 }
 
-bool testing_run() {
+bool testing_run(void) {
   size_t prefixLen = strlen(kTestPrefix);
 
-  unsigned nFailedTests = 0;
-  unsigned nTests = 0;
-  for (size_t b = 0, i = 0; b < regSize; b += kBlockSize, i++) {
-    size_t n = regSize - b > kBlockSize ? kBlockSize : regSize - b;
-    for (size_t j = 0; j < n; j++) {
-      unsigned f = nFailedChecks;
+  int nFailedTests = 0;
+  int nTests = 0;
+  for (int b = 0, i = 0; b < regSize; b += kBlockSize, i++) {
+    int n = regSize - b > kBlockSize ? kBlockSize : regSize - b;
+    for (int j = 0; j < n; j++) {
+      int f = nFailedChecks;
       reg[i][j].func();
-      char const *printName = reg[i][j].funcName;
+      const char *printName = reg[i][j].funcName;
       if (strncmp(reg[i][j].funcName, kTestPrefix, prefixLen) == 0) {
         printName += prefixLen;
       }
@@ -73,8 +73,8 @@ bool testing_run() {
   return nFailedTests > 0;
 }
 
-void testing_finish() {
-  for (size_t i = 0; i < kNumBlocks; i++) {
+void testing_finish(void) {
+  for (int i = 0; i < kNumBlocks; i++) {
     if (reg[i]) {
       free(reg[i]);
     } else {
@@ -84,12 +84,7 @@ void testing_finish() {
 }
 
 void testing_fail(
-    char const *funcName,
-    char const *file,
-    int line,
-    char const *expr,
-    char const *message,
-    ...) {
+    const char *funcName, const char *file, int line, const char *expr, const char *message, ...) {
   fprintf(stderr, "Check failed in %s %s@%d: %s\n", funcName, file, line, expr);
   va_list va;
   if (message) {

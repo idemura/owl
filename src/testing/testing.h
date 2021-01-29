@@ -8,26 +8,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef void (*TestCaseFP)();
-
-void testing_init(int argc, char **argv);
-void testing_register(TestCaseFP func, char const *funcName);
-bool testing_run();
-void testing_finish();
-
-// Internal:
-void testing_fail(
-    char const *funcName,
-    char const *file,
-    int line,
-    char const *expr,
-    char const *message,
-    ...);
-
 #define CHECK_VA(cond, ...) \
   do { \
     if (!(cond)) { \
@@ -40,8 +20,15 @@ void testing_fail(
 
 #define TESTING_REGISTER(func) testing_register(&(func), #func)
 
-#ifdef __cplusplus
-}
-#endif
+typedef void (*TestCaseFP)(void);
+
+void testing_init(int argc, char **argv);
+void testing_register(TestCaseFP func, const char *funcName);
+bool testing_run(void);
+void testing_finish(void);
+
+/* Internal */
+void testing_fail(
+    const char *funcName, const char *file, int line, const char *expr, const char *message, ...);
 
 #endif

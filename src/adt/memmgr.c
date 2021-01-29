@@ -3,11 +3,9 @@
 #include <memory.h>
 #include <stdlib.h>
 
-static IMemMgr stdMemMgr = {
+static IMemMgr s_mm = {
     .allocatez = calloc,
     .release = free,
 };
 
-IMemMgr *getStdMemMgr() {
-  return &stdMemMgr;
-}
+IMemMgr *stdmm = &s_mm;

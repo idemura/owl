@@ -4,11 +4,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef uint8_t ubyte;
+// Hungarian notation:
+// I - i32
+// J - u32 (next to I)
+// L - i64
+// M - u64 (next to L)
+// U - size_t
+// Z - strz
+// A - array (pointer + size)
+// P - pointer
+// F - f32
+// D - f64
 
 typedef int8_t i8;
 typedef int16_t i16;
@@ -20,8 +26,7 @@ typedef uint16_t u16;
 typedef uint16_t u32;
 typedef uint16_t u64;
 
-#ifdef __cplusplus
-}
-#endif
+typedef float f32;
+typedef double f64;
 
 #endif

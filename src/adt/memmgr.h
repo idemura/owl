@@ -3,9 +3,8 @@
 
 #include "types/primitive.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define MM_ALLOCATEZ(n, size) stdmm->allocatez(n, size)
+#define MM_RELEASE(p) stdmm->release(p)
 
 typedef struct {
   // Allocate and clear memory with 0
@@ -13,10 +12,6 @@ typedef struct {
   void (*release)(void *p);
 } IMemMgr;
 
-IMemMgr *getStdMemMgr();
-
-#ifdef __cplusplus
-}
-#endif
+extern IMemMgr *stdmm;
 
 #endif

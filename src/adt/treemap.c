@@ -2,7 +2,7 @@
 
 static TreeNode empty;
 
-void TreeMap_init() {
+void TreeMap_init(void) {
   empty.child[0] = &empty;
   empty.child[1] = &empty;
 }
@@ -13,7 +13,7 @@ bool TreeMap_isNull(TreeNode *n) {
 
 void TreeMap_new(TreeMap *t, INodeMemMgr *nmm, size_t valueSize) {
   t->nmm = nmm;
-  t->valueSize = valueSize;
+  t->nodeSize = sizeof(TreeNode) + valueSize;
   t->size = 0;
   t->root = &empty;
 }
@@ -22,33 +22,11 @@ inline static void *TreeMap_value(TreeNode *n) {
   return (char *) n + sizeof(TreeNode);
 }
 
-inline static void TreeMap_initNode(
-    TreeNode *n, i64 keyInt, char const *keyStr, u32 keyStrLength) {
-  n->keyInt = keyInt;
-  n->keyStr = keyStr;
-  n->keyStrLength = keyStrLength;
-  n->level = 0;
+inline static void TreeMap_initNode(TreeNode *n, const Key *key) {
+  n->key = *key;
+  n->level = 1;
   n->child[0] = &empty;
   n->child[1] = &empty;
-}
-
-inline static int TreeMap_compare(TreeNode const *a, TreeNode const *b) {
-  if (!(a->keyStrLength | b->keyStrLength) || a->keyInt != b->keyInt) {
-    return (int) (a->keyInt - b->keyInt);
-  }
-  if (!b->keyStrLength) {
-    return 1;
-  }
-  if (!a->keyStrLength) {
-    return -1;
-  }
-  size_t cmpBytes =
-      a->keyStrLength < b->keyStrLength ? a->keyStrLength : b->keyStrLength;
-  int d = memcmp(a->keyStr, b->keyStr, cmpBytes);
-  if (d != 0) {
-    return d;
-  }
-  return (int) (a->keyStrLength - b->keyStrLength);
 }
 
 static void TreeMap_destroyRec(INodeMemMgr *nmm, TreeNode *node) {
@@ -65,21 +43,19 @@ void TreeMap_destroy(TreeMap *t) {
 
 typedef struct {
   TreeMap *t;
-  TreeNode *key;
+  const Key *key;
   TreeNode *res;
-  size_t valueSize;
 } PutState;
 
 static TreeNode *TreeMap_putRec(PutState *state, TreeNode *node) {
   if (node == &empty) {
-    TreeNode *p = state->t->nmm->allocatez(sizeof(TreeNode) + state->valueSize);
-    memcpy(p, state->key, sizeof(TreeNode));
-    p->level = 1;
+    TreeNode *p = state->t->nmm->allocatez(state->t->nodeSize);
+    TreeMap_initNode(p, state->key);
     state->t->size++;
     state->res = p;
     return p;
   }
-  int d = TreeMap_compare(state->key, node);
+  int d = Key_compare(state->key, &node->key);
   if (d == 0) {
     state->res = node;
     return node;
@@ -114,27 +90,16 @@ static TreeNode *TreeMap_putRec(PutState *state, TreeNode *node) {
   return p;
 }
 
-void *TreeMap_put(
-    TreeMap *t,
-    i64 keyInt,
-    char const *keyStr,
-    u32 keyStrLength,
-    size_t valueSize) {
-  TreeNode k;
-  TreeMap_initNode(&k, keyInt, keyStr, keyStrLength);
-  PutState state = {
-      .t = t, .key = &k, .res = NULL, .valueSize = t->valueSize + valueSize};
+void *TreeMap_put(TreeMap *t, Key key) {
+  PutState state = {.t = t, .key = &key};
   t->root = TreeMap_putRec(&state, t->root);
   return TreeMap_value(state.res);
 }
 
-void *TreeMap_get(
-    TreeMap *t, i64 keyInt, char const *keyStr, u32 keyStrLength) {
-  TreeNode target;
-  TreeMap_initNode(&target, keyInt, keyStr, keyStrLength);
+void *TreeMap_get(TreeMap *t, Key key) {
   TreeNode *node = t->root;
   while (node != &empty) {
-    int d = TreeMap_compare(&target, node);
+    int d = Key_compare(&key, &node->key);
     if (d == 0) {
       return TreeMap_value(node);
     }
@@ -145,17 +110,23 @@ void *TreeMap_get(
 
 typedef struct {
   TreeMap *t;
-  TreeNode *key;
+  const Key *key;
 } DelState;
 
 static TreeNode *TreeMap_delRec(DelState *state, TreeNode *node) {
   if (node == &empty) {
     return node;
   }
-  int d = TreeMap_compare(state->key, node);
+  int d = Key_compare(state->key, &node->key);
   if (d == 0) {
     state->t->size--;
-    return node;
+    TreeNode *r;
+    if (node->child[0] == &empty) {
+      r = node->child[1];
+    } else {
+      r = node;
+    }
+    return r;
   }
   int branch = d > 0;
   TreeNode *p = node;
@@ -164,11 +135,9 @@ static TreeNode *TreeMap_delRec(DelState *state, TreeNode *node) {
   return c;
 }
 
-bool TreeMap_del(TreeMap *t, i64 keyInt, char const *keyStr, u32 keyStrLength) {
+bool TreeMap_del(TreeMap *t, Key key) {
   size_t s = t->size;
-  TreeNode k;
-  TreeMap_initNode(&k, keyInt, keyStr, keyStrLength);
-  DelState state = {.t = t, .key = &k};
+  DelState state = {.t = t, .key = &key};
   t->root = TreeMap_delRec(&state, t->root);
   return t->size < s;
 }

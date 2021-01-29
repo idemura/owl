@@ -1,4 +1,4 @@
-#include "adt/treemap.h"
+#include "owl/treemap.h"
 
 #include "testing/testing.h"
 
@@ -24,20 +24,20 @@ static void test_TreeMap_put(void) {
   TreeMap_new(&t, &nmm, sizeof(int));
   CHECK(t.size == 0);
 
-  *(int *) TreeMap_put(&t, Key_number(30)) = 1;
+  *(int *) TreeMap_put(&t, LKey_number(30)) = 1;
   CHECK(t.root->key.nk == 30);
   CHECK(t.root->level == 1);
   CHECK(TreeMap_isNull(t.root->child[0]));
   CHECK(TreeMap_isNull(t.root->child[1]));
 
-  *(int *) TreeMap_put(&t, Key_number(10)) = 2;
+  *(int *) TreeMap_put(&t, LKey_number(10)) = 2;
   CHECK(t.root->key.nk == 10);
   CHECK(t.root->level == 1);
   CHECK(TreeMap_isNull(t.root->child[0]));
   CHECK(t.root->child[1]->key.nk == 30);
   CHECK(t.root->child[1]->level == 1);
 
-  *(int *) TreeMap_put(&t, Key_number(20)) = 3;
+  *(int *) TreeMap_put(&t, LKey_number(20)) = 3;
   CHECK(t.root->key.nk == 20);
   CHECK(t.root->level == 2);
   CHECK(t.root->child[0]->key.nk == 10);
@@ -47,9 +47,9 @@ static void test_TreeMap_put(void) {
 
   CHECK(t.size == 3);
 
-  CHECK(*(int *) TreeMap_get(&t, Key_number(10)) == 2);
-  CHECK(*(int *) TreeMap_get(&t, Key_number(20)) == 3);
-  CHECK(*(int *) TreeMap_get(&t, Key_number(30)) == 1);
+  CHECK(*(int *) TreeMap_get(&t, LKey_number(10)) == 2);
+  CHECK(*(int *) TreeMap_get(&t, LKey_number(20)) == 3);
+  CHECK(*(int *) TreeMap_get(&t, LKey_number(30)) == 1);
 
   TreeMap_destroy(&t);
   CHECK(nNodes == 0);

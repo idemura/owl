@@ -1,5 +1,5 @@
-#ifndef TYPES_PRIMITIVE_H
-#define TYPES_PRIMITIVE_H
+#ifndef FOUNDATION_PRIMITIVE_H
+#define FOUNDATION_PRIMITIVE_H
 
 #include <stddef.h>
 #include <stdint.h>

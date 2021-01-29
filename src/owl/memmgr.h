@@ -1,7 +1,7 @@
-#ifndef ADT_MEMMGR_H
-#define ADT_MEMMGR_H
+#ifndef OWL_MEMMGR_H
+#define OWL_MEMMGR_H
 
-#include "types/primitive.h"
+#include "foundation/primitive.h"
 
 #define MM_ALLOCATEZ(n, size) stdmm->allocatez(n, size)
 #define MM_RELEASE(p) stdmm->release(p)

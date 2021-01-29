@@ -1,4 +1,4 @@
-#include "adt/treemap.h"
+#include "owl/treemap.h"
 
 static TreeNode empty;
 
@@ -18,11 +18,7 @@ void TreeMap_new(TreeMap *t, INodeMemMgr *nmm, size_t valueSize) {
   t->root = &empty;
 }
 
-inline static void *TreeMap_value(TreeNode *n) {
-  return (char *) n + sizeof(TreeNode);
-}
-
-inline static void TreeMap_initNode(TreeNode *n, const Key *key) {
+inline static void TreeMap_initNode(TreeNode *n, const LKey *key) {
   n->key = *key;
   n->level = 1;
   n->child[0] = &empty;
@@ -43,7 +39,7 @@ void TreeMap_destroy(TreeMap *t) {
 
 typedef struct {
   TreeMap *t;
-  const Key *key;
+  const LKey *key;
   TreeNode *res;
 } PutState;
 
@@ -55,7 +51,7 @@ static TreeNode *TreeMap_putRec(PutState *state, TreeNode *node) {
     state->res = p;
     return p;
   }
-  int d = Key_compare(state->key, &node->key);
+  int d = LKey_compare(state->key, &node->key);
   if (d == 0) {
     state->res = node;
     return node;
@@ -90,18 +86,18 @@ static TreeNode *TreeMap_putRec(PutState *state, TreeNode *node) {
   return p;
 }
 
-void *TreeMap_put(TreeMap *t, Key key) {
+void *TreeMap_put(TreeMap *t, LKey key) {
   PutState state = {.t = t, .key = &key};
   t->root = TreeMap_putRec(&state, t->root);
-  return TreeMap_value(state.res);
+  return state.res->value;
 }
 
-void *TreeMap_get(TreeMap *t, Key key) {
+void *TreeMap_get(TreeMap *t, LKey key) {
   TreeNode *node = t->root;
   while (node != &empty) {
-    int d = Key_compare(&key, &node->key);
+    int d = LKey_compare(&key, &node->key);
     if (d == 0) {
-      return TreeMap_value(node);
+      return node->value;
     }
     node = node->child[d > 0];
   }
@@ -110,14 +106,14 @@ void *TreeMap_get(TreeMap *t, Key key) {
 
 typedef struct {
   TreeMap *t;
-  const Key *key;
+  const LKey *key;
 } DelState;
 
 static TreeNode *TreeMap_delRec(DelState *state, TreeNode *node) {
   if (node == &empty) {
     return node;
   }
-  int d = Key_compare(state->key, &node->key);
+  int d = LKey_compare(state->key, &node->key);
   if (d == 0) {
     state->t->size--;
     TreeNode *r;
@@ -135,7 +131,7 @@ static TreeNode *TreeMap_delRec(DelState *state, TreeNode *node) {
   return c;
 }
 
-bool TreeMap_del(TreeMap *t, Key key) {
+bool TreeMap_del(TreeMap *t, LKey key) {
   size_t s = t->size;
   DelState state = {.t = t, .key = &key};
   t->root = TreeMap_delRec(&state, t->root);

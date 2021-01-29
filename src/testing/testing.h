@@ -1,7 +1,7 @@
 #ifndef TESTING_TESTING_H
 #define TESTING_TESTING_H
 
-#include "types/primitive.h"
+#include "foundation/primitive.h"
 
 #include <stdbool.h>
 #include <stddef.h>

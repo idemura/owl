@@ -1,7 +1,7 @@
 #ifndef TESTING_TESTING_H
 #define TESTING_TESTING_H
 
-#include "foundation/primitive.h"
+#include "foundation/lang.h"
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -11,24 +11,27 @@
 #define CHECK_VA(cond, ...) \
   do { \
     if (!(cond)) { \
-      testing_fail(__func__, __FILE__, __LINE__, #cond, __VA_ARGS__); \
+      testingFail(__func__, __FILE__, __LINE__, #cond, __VA_ARGS__); \
       return; \
     } \
   } while (0);
 
 #define CHECK(cond) CHECK_VA(cond, NULL)
 
-#define TESTING_REGISTER(func) testing_register(&(func), #func)
+#define TEST_CASE(func) (TestCase) {.body=&(func), #func}
 
-typedef void (*TestCaseFP)(void);
+typedef struct {
+  void (*body)(void);
+  const char *name;
+} TestCase;
 
-void testing_init(int argc, char **argv);
-void testing_register(TestCaseFP func, const char *funcName);
-bool testing_run(void);
-void testing_finish(void);
+void testingInit(int argc, char **argv);
+void testingAdd(void (*begin)(void), void (*end)(void), TestCase *tests, size_t testsNum);
+bool testingRun(void);
+void testingFinish(void);
 
 /* Internal */
-void testing_fail(
-    const char *funcName, const char *file, int line, const char *expr, const char *message, ...);
+void testingFail(
+    const char *func, const char *file, int line, const char *expr, const char *message, ...);
 
 #endif

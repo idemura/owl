@@ -1,7 +1,7 @@
 #ifndef OWL_MEMMGR_H
 #define OWL_MEMMGR_H
 
-#include "foundation/primitive.h"
+#include "foundation/lang.h"
 
 #define MM_ALLOCATEZ(n, size) stdmm->allocatez(n, size)
 #define MM_RELEASE(p) stdmm->release(p)

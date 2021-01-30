@@ -3,12 +3,12 @@
 void test_TreeMap(void);
 
 int main(int argc, char **argv) {
-  testing_init(argc, argv);
+  testingInit(argc, argv);
 
   test_TreeMap();
 
-  bool passed = testing_run();
-  testing_finish();
+  bool passed = testingRun();
+  testingFinish();
 
   return passed ? 0 : 1;
 }

@@ -59,8 +59,18 @@ static void test_TreeMap_del(void) {
   // TODO
 }
 
-void test_TreeMap(void) {
+static void test_TreeMap_begin() {
   TreeMap_init();
-  TESTING_REGISTER(test_TreeMap_put);
-  TESTING_REGISTER(test_TreeMap_del);
+}
+
+static void test_TreeMap_end() {
+  CHECK(nNodes == 0);
+}
+
+void test_TreeMap(void) {
+  static TestCase tests[] = {
+    TEST_CASE(test_TreeMap_put),
+    TEST_CASE(test_TreeMap_del),
+  };
+  testingAdd(&test_TreeMap_begin, &test_TreeMap_end, tests, ARRAY_SIZE(tests));
 }

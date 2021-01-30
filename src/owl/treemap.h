@@ -1,7 +1,7 @@
 #ifndef OWL_TREEMAP_H
 #define OWL_TREEMAP_H
 
-#include "foundation/primitive.h"
+#include "foundation/lang.h"
 #include "owl/lkey.h"
 
 #include <memory.h>

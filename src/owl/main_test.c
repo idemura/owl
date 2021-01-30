@@ -1,14 +1,15 @@
 #include "testing/testing.h"
 
-void test_TreeMap(void);
+void test_treemap(void);
 
-int main(int argc, char **argv) {
-  testingInit(argc, argv);
+int main(int argc, char **argv)
+{
+    testing_init(argc, argv);
 
-  test_TreeMap();
+    test_treemap();
 
-  bool passed = testingRun();
-  testingFinish();
+    bool passed = testing_run();
+    testing_finish();
 
-  return passed ? 0 : 1;
+    return passed ? 0 : 1;
 }

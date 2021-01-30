@@ -10,38 +10,36 @@
 
 // AA tree implementation.
 
-// Tree node. Tree key is a tuple (key:int, string). If key:int are equal,
-// strings are compared with memcmp.
-typedef struct TreeNode {
-  LKey key;
-  int level;
-  struct TreeNode *child[2];
-  long value[];
-} TreeNode;
+typedef struct tree_node {
+    lkey key;
+    int level;
+    struct tree_node *child[2];
+    long value[];
+} tree_node;
 
 typedef struct {
-  TreeNode *(*allocatez)(size_t size);
-  void (*release)(TreeNode *n);
-} INodeMemMgr;
+    tree_node *(*allocatez)(size_t size);
+    void (*release)(tree_node *n);
+} node_memmgr;
 
-// AA tree object.
 typedef struct {
-  INodeMemMgr *nmm;
-  size_t nodeSize;
-  size_t size;
-  TreeNode *root;
-} TreeMap;
+    node_memmgr *nmm;
+    size_t node_size;
+    size_t size;
+    tree_node *root;
+} treemap;
 
-void TreeMap_init(void);
-bool TreeMap_isNull(TreeNode *n);
-void TreeMap_new(TreeMap *t, INodeMemMgr *nmm, size_t valueSize);
-void TreeMap_destroy();
-void *TreeMap_put(TreeMap *t, LKey key);
-void *TreeMap_get(TreeMap *t, LKey key);
-bool TreeMap_del(TreeMap *t, LKey key);
+void treemap_init(void);
+bool treemap_is_null(tree_node *n);
+void treemap_new(treemap *t, node_memmgr *nmm, size_t value_size);
+void treemap_destroy();
+void *treemap_put(treemap *t, lkey key);
+void *treemap_get(treemap *t, lkey key);
+bool treemap_del(treemap *t, lkey key);
 
-inline static size_t TreeMap_size(TreeMap *t) {
-  return t->size;
+inline static size_t treemap_size(treemap *t)
+{
+    return t->size;
 }
 
 #endif

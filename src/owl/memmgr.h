@@ -3,15 +3,15 @@
 
 #include "foundation/lang.h"
 
-#define MM_ALLOCATEZ(n, size) stdmm->allocatez(n, size)
-#define MM_RELEASE(p) stdmm->release(p)
+#define MM_ALLOCATEZ(n, size) std_mm->allocatez(n, size)
+#define MM_RELEASE(p) std_mm->release(p)
 
 typedef struct {
-  // Allocate and clear memory with 0
-  void *(*allocatez)(size_t n, size_t size);
-  void (*release)(void *p);
-} IMemMgr;
+    // Allocate and clear memory with 0
+    void *(*allocatez)(size_t n, size_t size);
+    void (*release)(void *p);
+} memmgr;
 
-extern IMemMgr *stdmm;
+extern memmgr *std_mm;
 
 #endif

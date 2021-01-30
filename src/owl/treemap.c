@@ -1,139 +1,158 @@
 #include "owl/treemap.h"
 
-static TreeNode empty;
+static tree_node empty;
 
-void TreeMap_init(void) {
-  empty.child[0] = &empty;
-  empty.child[1] = &empty;
+void treemap_init(void)
+{
+    empty.child[0] = &empty;
+    empty.child[1] = &empty;
 }
 
-bool TreeMap_isNull(TreeNode *n) {
-  return n == &empty;
+bool treemap_is_null(tree_node *n)
+{
+    return n == &empty;
 }
 
-void TreeMap_new(TreeMap *t, INodeMemMgr *nmm, size_t valueSize) {
-  t->nmm = nmm;
-  t->nodeSize = sizeof(TreeNode) + valueSize;
-  t->size = 0;
-  t->root = &empty;
+void treemap_new(treemap *t, node_memmgr *nmm, size_t value_size)
+{
+    t->nmm = nmm;
+    t->node_size = sizeof(tree_node) + value_size;
+    t->size = 0;
+    t->root = &empty;
 }
 
-inline static void TreeMap_initNode(TreeNode *n, const LKey *key) {
-  n->key = *key;
-  n->level = 1;
-  n->child[0] = &empty;
-  n->child[1] = &empty;
+inline static void treemap_init_node(tree_node *n, const lkey *key)
+{
+    n->key = *key;
+    n->level = 1;
+    n->child[0] = &empty;
+    n->child[1] = &empty;
 }
 
-static void TreeMap_destroyRec(INodeMemMgr *nmm, TreeNode *node) {
-  if (node != &empty) {
-    TreeMap_destroyRec(nmm, node->child[0]);
-    TreeMap_destroyRec(nmm, node->child[1]);
-    nmm->release(node);
-  }
+static void treemap_destroy_rec(node_memmgr *nmm, tree_node *node)
+{
+    if (node != &empty) {
+        treemap_destroy_rec(nmm, node->child[0]);
+        treemap_destroy_rec(nmm, node->child[1]);
+        nmm->release(node);
+    }
 }
 
-void TreeMap_destroy(TreeMap *t) {
-  TreeMap_destroyRec(t->nmm, t->root);
+void treemap_destroy(treemap *t)
+{
+    treemap_destroy_rec(t->nmm, t->root);
 }
 
 typedef struct {
-  TreeMap *t;
-  const LKey *key;
-  TreeNode *res;
-} PutState;
+    treemap *tree;
+    const lkey *key;
+    tree_node *res;
+} put_st;
 
-static TreeNode *TreeMap_putRec(PutState *state, TreeNode *node) {
-  if (node == &empty) {
-    TreeNode *p = state->t->nmm->allocatez(state->t->nodeSize);
-    TreeMap_initNode(p, state->key);
-    state->t->size++;
-    state->res = p;
-    return p;
-  }
-  int d = LKey_compare(state->key, &node->key);
-  if (d == 0) {
-    state->res = node;
-    return node;
-  }
-  int branch = d > 0;
-  TreeNode *p = node;
-  TreeNode *currentChild = p->child[branch];
-  TreeNode *c = (p->child[branch] = TreeMap_putRec(state, currentChild));
-  if (c == currentChild) {
-    // Fast return: do not touch other nodes (possibly not in cache)
-    return node;
-  }
-  if (branch) {
-    // Right child: test if we need to increment level first
-    if (p->level < c->level) {
-      p->level++;
+static tree_node *treemap_put_rec(put_st *state, tree_node *node)
+{
+    if (node == &empty) {
+        tree_node *p = state->tree->nmm->allocatez(state->tree->node_size);
+        treemap_init_node(p, state->key);
+        state->tree->size++;
+        state->res = p;
+        return p;
     }
-  } else if (p->level == c->level) {
-    // Rotate right
-    p->child[0] = c->child[1];
-    c->child[1] = p;
-    p = c;
-  }
-  // Check if we have 3 nodes of the same level of the right
-  if (p->level == p->child[1]->child[1]->level) {
-    c = p->child[1];
-    p->child[1] = c->child[0];
-    c->child[0] = p;
-    c->level++;
-    p = c;
-  }
-  return p;
-}
 
-void *TreeMap_put(TreeMap *t, LKey key) {
-  PutState state = {.t = t, .key = &key};
-  t->root = TreeMap_putRec(&state, t->root);
-  return state.res->value;
-}
-
-void *TreeMap_get(TreeMap *t, LKey key) {
-  TreeNode *node = t->root;
-  while (node != &empty) {
-    int d = LKey_compare(&key, &node->key);
+    int d = lkey_compare(state->key, &node->key);
     if (d == 0) {
-      return node->value;
+        state->res = node;
+        return node;
     }
-    node = node->child[d > 0];
-  }
-  return NULL;
+
+    int branch = d > 0;
+    tree_node *p = node;
+    tree_node *current_child = p->child[branch];
+    tree_node *c = (p->child[branch] = treemap_put_rec(state, current_child));
+    if (c == current_child) {
+        // Fast return: do not touch other nodes (possibly not in cache)
+        return node;
+    }
+
+    if (branch) {
+        // Right child: test if we need to increment level first
+        if (p->level < c->level) {
+            p->level++;
+        }
+    } else if (p->level == c->level) {
+        // Rotate right
+        p->child[0] = c->child[1];
+        c->child[1] = p;
+        p = c;
+    }
+
+    // Check if we have 3 nodes of the same level of the right
+    if (p->level == p->child[1]->child[1]->level) {
+        c = p->child[1];
+        p->child[1] = c->child[0];
+        c->child[0] = p;
+        c->level++;
+        p = c;
+    }
+
+    return p;
+}
+
+void *treemap_put(treemap *t, lkey key)
+{
+    put_st state = {.tree = t, .key = &key};
+    t->root = treemap_put_rec(&state, t->root);
+    return state.res->value;
+}
+
+void *treemap_get(treemap *t, lkey key)
+{
+    tree_node *node = t->root;
+    while (node != &empty) {
+        int d = lkey_compare(&key, &node->key);
+        if (d == 0) {
+            return node->value;
+        }
+        node = node->child[d > 0];
+    }
+    return NULL;
 }
 
 typedef struct {
-  TreeMap *t;
-  const LKey *key;
-} DelState;
+    treemap *tree;
+    const lkey *key;
+} del_st;
 
-static TreeNode *TreeMap_delRec(DelState *state, TreeNode *node) {
-  if (node == &empty) {
-    return node;
-  }
-  int d = LKey_compare(state->key, &node->key);
-  if (d == 0) {
-    state->t->size--;
-    TreeNode *r;
-    if (node->child[0] == &empty) {
-      r = node->child[1];
-    } else {
-      r = node;
+static tree_node *treemap_del_rec(del_st *state, tree_node *node)
+{
+    if (node == &empty) {
+        return node;
     }
-    return r;
-  }
-  int branch = d > 0;
-  TreeNode *p = node;
-  TreeNode *currentChild = p->child[branch];
-  TreeNode *c = (p->child[branch] = TreeMap_delRec(state, currentChild));
-  return c;
+
+    int d = lkey_compare(state->key, &node->key);
+    if (d == 0) {
+        state->tree->size--;
+        tree_node *r;
+        if (node->child[0] == &empty) {
+            r = node->child[1];
+        } else {
+            r = node;
+        }
+        return r;
+    }
+
+    int branch = d > 0;
+    tree_node *p = node;
+    tree_node *current_child = p->child[branch];
+    tree_node *c = (p->child[branch] = treemap_del_rec(state, current_child));
+
+    return c;
 }
 
-bool TreeMap_del(TreeMap *t, LKey key) {
-  size_t s = t->size;
-  DelState state = {.t = t, .key = &key};
-  t->root = TreeMap_delRec(&state, t->root);
-  return t->size < s;
+bool treemap_del(treemap *t, lkey key)
+{
+    size_t s = t->size;
+    del_st state = {.tree = t, .key = &key};
+    t->root = treemap_del_rec(&state, t->root);
+    return t->size < s;
 }

@@ -9,53 +9,57 @@
 
 // Generic key. It is either number (long) or string with length and hash value.
 typedef struct {
-  const char *sk;
-  union {
-    struct {
-      unsigned long skLen;
-      unsigned long hk; // Hash value
+    const char *sk;
+    union {
+        struct {
+            unsigned long sk_len;
+            unsigned long hk; // Hash value
+        };
+        long nk;
     };
-    long nk;
-  };
-} LKey;
+} lkey;
 
-static_assert(sizeof(LKey) == 24, "key_size");
+static_assert(sizeof(lkey) == 24, "key_size");
 
-inline static LKey LKey_number(long n) {
-  return (LKey){.nk = n};
+inline static lkey lkey_number(long n)
+{
+    return (lkey){.nk = n};
 }
 
-inline static LKey LKey_string(const char *s) {
-  return (LKey){.sk = s, .skLen = strlen(s)};
+inline static lkey lkey_string(const char *s)
+{
+    return (lkey){.sk = s, .sk_len = strlen(s)};
 }
 
-inline static bool LKey_equals(const LKey *a, const LKey *b) {
-  if (!a->sk) {
-    return a->nk == b->nk;
-  }
-  if (a->skLen != b->skLen || a->hk != b->hk) {
-    return 0;
-  }
-  return memcmp(a->sk, b->sk, a->skLen) == 0;
+inline static bool lkey_equals(const lkey *a, const lkey *b)
+{
+    if (!a->sk) {
+        return a->nk == b->nk;
+    }
+    if (a->sk_len != b->sk_len || a->hk != b->hk) {
+        return 0;
+    }
+    return memcmp(a->sk, b->sk, a->sk_len) == 0;
 }
 
-inline static int LKey_compare(const LKey *a, const LKey *b) {
-  // All keys are either numbers or strings. Check if this is number first.
-  if (!a->sk) {
-    return (int) (a->nk - b->nk);
-  }
-  if (!b->skLen) {
-    return a->skLen > 0;
-  }
-  if (!a->skLen) {
-    return -1;
-  }
-  size_t cmpBytes = a->skLen < b->skLen ? a->skLen : b->skLen;
-  int d = memcmp(a->sk, b->sk, cmpBytes);
-  if (d != 0) {
-    return d;
-  }
-  return (int) (a->skLen - b->skLen);
+inline static int lkey_compare(const lkey *a, const lkey *b)
+{
+    // All keys are either numbers or strings. Check if this is number first.
+    if (!a->sk) {
+        return (int) (a->nk - b->nk);
+    }
+    if (!b->sk_len) {
+        return a->sk_len > 0;
+    }
+    if (!a->sk_len) {
+        return -1;
+    }
+    size_t cmp_bytes = a->sk_len < b->sk_len ? a->sk_len : b->sk_len;
+    int d = memcmp(a->sk, b->sk, cmp_bytes);
+    if (d != 0) {
+        return d;
+    }
+    return (int) (a->sk_len - b->sk_len);
 }
 
 #endif

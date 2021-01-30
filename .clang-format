@@ -1,7 +1,7 @@
 ---
 Language: Cpp
 # BasedOnStyle: Google
-AccessModifierOffset: -2
+AccessModifierOffset: -4
 AlignAfterOpenBracket: AlwaysBreak
 AlignConsecutiveAssignments: false
 AlignConsecutiveDeclarations: false
@@ -24,8 +24,8 @@ BraceWrapping:
   AfterClass:      false
   AfterControlStatement: false
   AfterEnum:       false
-  AfterFunction:   false
-  AfterNamespace:  false
+  AfterFunction:   true
+  AfterNamespace:  true
   AfterObjCDeclaration: false
   AfterStruct:     false
   AfterUnion:      false
@@ -47,8 +47,8 @@ BreakStringLiterals: true
 ColumnLimit: 100
 CompactNamespaces: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
-ConstructorInitializerIndentWidth: 4
-ContinuationIndentWidth: 4
+ConstructorInitializerIndentWidth: 8
+ContinuationIndentWidth: 8
 Cpp11BracedListStyle: true
 DerivePointerAlignment: true
 DisableFormat: false
@@ -69,7 +69,7 @@ IncludeIsMainRegex: '([-_](test|unittest))?$'
 IndentCaseLabels: false
 # IndentGotoLabels: false
 IndentPPDirectives: None
-IndentWidth: 2
+IndentWidth: 4
 IndentWrappedFunctionNames: false
 KeepEmptyLinesAtTheStartOfBlocks: false
 MacroBlockBegin: ''
@@ -111,13 +111,13 @@ SpaceBeforeInheritanceColon: true
 SpaceBeforeParens: ControlStatements
 SpaceBeforeRangeBasedForLoopColon: true
 SpaceInEmptyParentheses: false
-SpacesBeforeTrailingComments: 2
+SpacesBeforeTrailingComments: 1
 SpacesInAngles: false
 SpacesInContainerLiterals: true
 SpacesInCStyleCastParentheses: false
 SpacesInParentheses: false
 SpacesInSquareBrackets: false
 Standard: Auto
-TabWidth: 2
+TabWidth: 4
 UseTab: Never
 ...

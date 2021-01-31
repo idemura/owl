@@ -1,4 +1,4 @@
 {
-  "deps": ["foundation"],
-  "libs": ["pthread"]
+	"deps": ["foundation"],
+	"libs": ["pthread"]
 }

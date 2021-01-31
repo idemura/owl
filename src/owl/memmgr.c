@@ -4,8 +4,8 @@
 #include <stdlib.h>
 
 static memmgr s_mm = {
-        .allocatez = calloc,
-        .release = free,
+		.allocatez = calloc,
+		.release = free,
 };
 
 memmgr *std_mm = &s_mm;

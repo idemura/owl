@@ -4,15 +4,15 @@ cc_extra =
 libs =
 
 rule cc
-  deps = gcc
-  depfile = $out.d
-  command = $cc_tool -MD -MF $out.d $cc_flags $cc_extra $cc_opt -c $in -o $out
-  description = Compile C
+	deps = gcc
+	depfile = $out.d
+	command = $cc_tool -MD -MF $out.d $cc_flags $cc_extra $cc_opt -c $in -o $out
+	description = Compile C
 
 rule ar
-  command = ar crs $out $in
-  description = Create static library
+	command = ar crs $out $in
+	description = Create static library
 
 rule ld
-  command = $cc_tool -L. -o $out $in $libs
-  description = Link
+	command = $cc_tool -L. -o $out $in $libs
+	description = Link

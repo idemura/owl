@@ -2,5 +2,5 @@
 
 void lang_empty(void)
 {
-	// To make .a contain something
+    // To make .a contain something
 }

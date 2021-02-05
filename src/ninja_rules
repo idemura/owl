@@ -1,18 +1,31 @@
-cc_tool = clang
-cc_flags = --std=c17 -Wall -Werror -march=native -I. -fPIC
-cc_extra =
+cc_common = -Wall -Werror -Wno-unused-function -march=native -I. -fPIC
+
+c_compiler = clang
+c_flags = --std=c17 $cc_common
+c_extra =
+
+cpp_compiler = clang++
+cpp_flags = --std=c++17 $cc_common -fno-rtti -fno-exceptions
+cpp_extra =
+
 libs =
 
-rule cc
+rule compile_c
     deps = gcc
     depfile = $out.d
-    command = $cc_tool -MD -MF $out.d $cc_flags $cc_extra $cc_opt -c $in -o $out
+    command = $c_compiler -MD -MF $out.d $c_flags $c_extra $cc_opt -c $in -o $out
     description = Compile C
+
+rule compile_cpp
+    deps = gcc
+    depfile = $out.d
+    command = $cpp_compiler -MD -MF $out.d $cpp_flags $cpp_extra $cc_opt -c $in -o $out
+    description = Compile C++
 
 rule ar
     command = ar crs $out $in
     description = Create static library
 
 rule ld
-    command = $cc_tool -L. -o $out $in $libs
+    command = $cpp_compiler -L. -o $out $in $libs
     description = Link

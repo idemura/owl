@@ -13,12 +13,15 @@ bool treemap_is_null(tree_node *n)
     return n == &empty;
 }
 
-void treemap_new(treemap *t, node_memmgr *nmm, size_t value_size)
+treemap treemap_new(node_memmgr *nmm, void *ctx, size_t value_size)
 {
-    t->nmm = nmm;
-    t->node_size = sizeof(tree_node) + value_size;
-    t->size = 0;
-    t->root = &empty;
+    return (treemap){
+            .nmm = nmm,
+            .nmm_ctx = ctx,
+            .node_size = sizeof(tree_node) + value_size,
+            .size = 0,
+            .root = &empty,
+    };
 }
 
 inline static void treemap_init_node(tree_node *n, const lkey *key)
@@ -29,18 +32,18 @@ inline static void treemap_init_node(tree_node *n, const lkey *key)
     n->child[1] = &empty;
 }
 
-static void treemap_destroy_rec(node_memmgr *nmm, tree_node *node)
+static void treemap_destroy_rec(node_memmgr *nmm, void *nmm_ctx, tree_node *node)
 {
     if (node != &empty) {
-        treemap_destroy_rec(nmm, node->child[0]);
-        treemap_destroy_rec(nmm, node->child[1]);
-        nmm->release(node);
+        treemap_destroy_rec(nmm, nmm_ctx, node->child[0]);
+        treemap_destroy_rec(nmm, nmm_ctx, node->child[1]);
+        nmm->release(nmm_ctx, node);
     }
 }
 
 void treemap_destroy(treemap *t)
 {
-    treemap_destroy_rec(t->nmm, t->root);
+    treemap_destroy_rec(t->nmm, t->nmm_ctx, t->root);
 }
 
 typedef struct {
@@ -52,7 +55,7 @@ typedef struct {
 static tree_node *treemap_put_rec(put_st *state, tree_node *node)
 {
     if (node == &empty) {
-        tree_node *p = state->tree->nmm->allocatez(state->tree->node_size);
+        tree_node *p = state->tree->nmm->allocatez(state->tree->nmm_ctx, state->tree->node_size);
         treemap_init_node(p, state->key);
         state->tree->size++;
         state->res = p;
@@ -126,6 +129,8 @@ typedef struct {
 
 static tree_node *treemap_delete_rec(delete_st *state, tree_node *node)
 {
+    return NULL;
+    /*
     if (node == &empty) {
         return node;
     }
@@ -301,8 +306,9 @@ static tree_node *treemap_delete_rec(delete_st *state, tree_node *node)
         }
         return node;
     } else {
-        / return node;
+        return node;
     }
+*/
 }
 
 bool treemap_delete(treemap *t, lkey key)
@@ -312,7 +318,7 @@ bool treemap_delete(treemap *t, lkey key)
     if (!state.removed) {
         return false;
     }
-    t->nmm->release(state.removed);
+    t->nmm->release(t->nmm_ctx, state.removed);
     t->size--;
     return true;
 }

@@ -8,6 +8,10 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // AA tree implementation.
 
 typedef struct tree_node {
@@ -18,12 +22,13 @@ typedef struct tree_node {
 } tree_node;
 
 typedef struct {
-    tree_node *(*allocatez)(size_t size);
-    void (*release)(tree_node *n);
+    tree_node *(*allocatez)(void *ctx, size_t size);
+    void (*release)(void *ctx, tree_node *n);
 } node_memmgr;
 
 typedef struct {
     node_memmgr *nmm;
+    void *nmm_ctx;
     size_t node_size;
     size_t size;
     tree_node *root;
@@ -31,8 +36,8 @@ typedef struct {
 
 void treemap_init(void);
 bool treemap_is_null(tree_node *n);
-void treemap_new(treemap *t, node_memmgr *nmm, size_t value_size);
-void treemap_destroy();
+treemap treemap_new(node_memmgr *nmm, void *ctx, size_t value_size);
+void treemap_destroy(treemap *t);
 void *treemap_put(treemap *t, lkey key);
 void *treemap_get(treemap *t, lkey key);
 bool treemap_delete(treemap *t, lkey key);
@@ -41,5 +46,9 @@ inline static size_t treemap_size(treemap *t)
 {
     return t->size;
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

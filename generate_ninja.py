@@ -9,7 +9,7 @@ import sys
 
 NINJA_FILE = "ninja_build"
 BUILD_JSON = "BUILD.json"
-MAIN_TEST = "main_test.c"
+MAIN_TEST = "main_test.cpp"
 MAIN = "main.c"
 
 
@@ -26,8 +26,12 @@ class NoTargetError(Exception):
         self.name = name
 
 
-def obj_name(c_file):
-    return os.path.splitext(c_file)[0] + ".o"
+def obj_name(src_file):
+    return os.path.splitext(src_file)[0] + ".o"
+
+
+def lib_name(pkg_name):
+    return "{0}/lib{0}.a".format(pkg_name)
 
 
 class Package:
@@ -36,30 +40,30 @@ class Package:
         self.src_dir = src_dir
         self.path = os.path.join(src_dir, name)
         self.props = props
-        self.MAIN_TEST = os.path.isfile(os.path.join(self.path, MAIN_TEST))
-        self.main = os.path.isfile(os.path.join(self.path, MAIN))
+        self.is_test = os.path.isfile(os.path.join(self.path, MAIN_TEST))
+        self.is_main = os.path.isfile(os.path.join(self.path, MAIN))
         self.deps = props.get('deps', [])
         self.transitive_deps = []
-        n = len(os.path.join(src_dir, "_")) - 1
-        self.c_files = [f[n:] for f in glob.glob(os.path.join(self.path, "*.c"))]
-        self.c_files.sort()
 
+        # Populate sources, split them in main and test parts.
+        path_last = len(os.path.join(src_dir, "_")) - 1
+        self.src_files = []
+        self.src_files += [f[path_last:] for f in glob.glob(os.path.join(self.path, "*.c"))]
+        self.src_files += [f[path_last:] for f in glob.glob(os.path.join(self.path, "*.cpp"))]
+        self.src_files.sort()
 
-    # Return (main, tests)
-    def split_files(self):
-        main = []
-        test = []
-        for f in self.c_files:
-            if f.endswith("_test.c") or f == MAIN_TEST:
-                test.append(f)
+        self.src_main = []
+        self.src_test = []
+        for f in self.src_files:
+            if f.find("_test.c") >= 0:
+                self.src_test.append(f)
             else:
-                main.append(f)
-
-        return (main, test)
+                self.src_main.append(f)
 
 
     def __repr__(self):
-        return "Package({} deps={} {})".format(self.name, self.deps, self.c_files)
+        return "Package({} deps={} {}/{})".format(
+                self.name, self.deps, self.src_main, self.src_test)
 
 
 class NinjaFile:
@@ -79,23 +83,24 @@ class NinjaFile:
             self.fo.write("# package {}\n".format(pkg))
 
 
-        def build_cc(self, c_file):
-            self.fo.write("build {}: cc {}\n".format(obj_name(c_file), c_file))
+        def compile(self, src_file):
+            rule = "compile_c" if src_file.endswith(".c") else "compile_cpp"
+            self.fo.write("build {}: {} {}\n".format(obj_name(src_file), rule, src_file))
 
 
-        def build_ar(self, pkg, c_files):
-            objs = [obj_name(f) for f in c_files]
-            self.fo.write("build {0}/lib{0}.a: ar {1}\n".format(pkg, ' '.join(objs)))
+        def build_ar(self, pkg, src_files):
+            objs = [obj_name(f) for f in src_files]
+            self.fo.write("build {}: ar {}\n".format(lib_name(pkg), ' '.join(objs)))
 
 
-        def build_ld(self, pkg, is_test, c_files, deps, libs):
+        def build_ld(self, pkg, is_test, src_files, deps, libs):
             deps.reverse()
-            expand_deps = ["{0}/lib{0}.a".format(l) for l in deps]
+            expand_deps = [lib_name(l) for l in deps]
             bin_name = pkg + "_test" if is_test else pkg
             self.fo.write("build {}/{}: ld {} {}\n".format(
                     pkg,
                     bin_name,
-                    ' '.join([obj_name(f) for f in c_files]),
+                    ' '.join([obj_name(f) for f in src_files]),
                     ' '.join(expand_deps)))
             if len(libs) > 0:
                 self.fo.write("    libs = {}\n".format(
@@ -133,7 +138,7 @@ def dfs_resolve(packages, discovered, visited, p, depth):
             raise NoTargetError(d)
         trans += dfs_resolve(packages, discovered, visited, packages[d], depth + 1)
 
-    p.transitive_deps = trans + [p.name]
+    p.transitive_deps = trans
     if debug:
         print("{}{}: {}".format(tab(depth), p.name, p.transitive_deps))
 
@@ -143,7 +148,7 @@ def dfs_resolve(packages, discovered, visited, p, depth):
     if debug:
         print("{}< {}".format(tab(depth), p.name))
 
-    return p.transitive_deps
+    return p.transitive_deps + [p.name]
 
 
 def resolve_deps(packages):
@@ -157,17 +162,17 @@ def resolve_deps(packages):
 def write_package(p, nf):
     nf.begin(p.name)
 
-    for c in p.c_files:
-        nf.build_cc(c)
-    main, test = p.split_files()
-    libs = p.props.get("libs", [])
-    if p.main:
-        nf.build_ld(p.name, False, main, p.transitive_deps, libs)
-    else:
-        nf.build_ar(p.name, main)
+    for c in p.src_files:
+        nf.compile(c)
 
-    if p.MAIN_TEST:
-        nf.build_ld(p.name, True, test, ["testing"] + p.transitive_deps, libs)
+    libs = p.props.get("libs", [])
+    if p.is_main:
+        nf.build_ld(p.name, False, p.src_main, p.transitive_deps, libs)
+    else:
+        nf.build_ar(p.name, p.src_main)
+
+    if p.is_test:
+        nf.build_ld(p.name, True, p.src_test, [p.name] + p.transitive_deps, ["gtest"] + libs)
 
     nf.end(p.name)
 

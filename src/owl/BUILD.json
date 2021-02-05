@@ -1,4 +1,3 @@
 {
-    "deps": ["foundation"],
-    "libs": ["pthread"]
+    "deps": ["foundation"]
 }

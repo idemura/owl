@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
+#define array_sizeof(a) (sizeof(a) / sizeof((a)[0]))
 
 typedef int8_t i8;
 typedef int16_t i16;

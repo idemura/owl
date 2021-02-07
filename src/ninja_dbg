@@ -1,4 +1,4 @@
-cc_opt = -Og -g
+cc_opt = -O0 -g
 
 include ninja_rules
 include ninja_build

@@ -5,39 +5,25 @@
 typedef struct {
     tree_map *tree;
     const tree_key *key;
-    tree_node *result;
+    tree_link *result;
 } rec_state;
-
-static tree_node empty = {.child = {[0] = &empty, [1] = &empty}};
-
-tree_node *tree_map_empty(void)
-{
-    return &empty;
-}
-
-bool tree_map_is_null(const tree_node *n)
-{
-    return n == &empty;
-}
 
 tree_map tree_map_new(node_memmgr *nmm, void *ctx, size_t value_size)
 {
-    return (tree_map){
-            .nmm = nmm,
-            .nmm_ctx = ctx,
-            .node_size = sizeof(tree_node) + value_size,
-            .size = 0,
-            .root = &empty,
-    };
+    tree_map t = {.nmm = nmm, .nmm_ctx = ctx, .node_size = sizeof(tree_node) + value_size};
+    t.empty.child[0] = &t.empty;
+    t.empty.child[1] = &t.empty;
+    t.root = (tree_node *) &t.empty;
+    return t;
 }
 
-static const tree_node *tree_map_check_rec(const tree_node *node)
+static const tree_link *tree_map_check_rec(const tree_link *node)
 {
-    if (node == &empty) {
+    if (node->level == 0) {
         return NULL;
     }
 
-    const tree_node *t;
+    const tree_link *t;
 
     if ((t = tree_map_check_rec(node->child[0]))) {
         return t;
@@ -66,103 +52,102 @@ static const tree_node *tree_map_check_rec(const tree_node *node)
 
 const tree_node *tree_map_check(const tree_map *t)
 {
-    return tree_map_check_rec(t->root);
+    return (tree_node *) tree_map_check_rec((tree_link *) t->root);
 }
 
-static void tree_map_destroy_rec(node_memmgr *nmm, void *nmm_ctx, tree_node *node)
+static void tree_map_destroy_rec(node_memmgr *nmm, void *nmm_ctx, tree_link *node)
 {
-    if (node != &empty) {
+    if (node->level != 0) {
         tree_map_destroy_rec(nmm, nmm_ctx, node->child[0]);
         tree_map_destroy_rec(nmm, nmm_ctx, node->child[1]);
-        nmm->release(nmm_ctx, node);
+        nmm->release(nmm_ctx, (tree_node *) node);
     }
 }
 
 void tree_map_destroy(tree_map *t)
 {
-    tree_map_destroy_rec(t->nmm, t->nmm_ctx, t->root);
+    tree_map_destroy_rec(t->nmm, t->nmm_ctx, (tree_link *) t->root);
 }
 
 // Rotate. Moves child @b up and makes node @n its `(1 - b)` child.
-inline static tree_node *tree_map_rotate(tree_node *n, int b)
+inline static tree_link *tree_map_rotate(tree_link *n, int b)
 {
-    tree_node *c = n->child[b];
+    tree_link *c = n->child[b];
     n->child[b] = c->child[1 - b];
     c->child[1 - b] = n;
     return c;
 }
 
-static tree_node *tree_map_put_rec(rec_state *state, tree_node *node)
+static tree_link *tree_map_put_rec(rec_state *state, tree_link *node)
 {
-    if (node == &empty) {
-        tree_node *p = state->tree->nmm->allocatez(state->tree->nmm_ctx, state->tree->node_size);
-        p->key = *state->key;
-        p->level = 1;
-        p->child[0] = &empty;
-        p->child[1] = &empty;
+    if (node->level == 0) {
+        tree_node *n = state->tree->nmm->allocatez(state->tree->nmm_ctx, state->tree->node_size);
+        n->link.child[0] = &state->tree->empty;
+        n->link.child[1] = &state->tree->empty;
+        n->link.level = 1;
+        n->key = *state->key;
         state->tree->size++;
-        state->result = p;
-        return p;
+        state->result = (tree_link *) n;
+        return state->result;
     }
 
-    int d = tree_key_compare(state->key, &node->key);
+    int d = tree_key_compare(state->key, &((tree_node *) node)->key);
     if (d == 0) {
         state->result = node;
         return node;
     }
 
     int branch = d > 0;
-    tree_node *x = node;
-    x->child[branch] = tree_map_put_rec(state, x->child[branch]);
+    node->child[branch] = tree_map_put_rec(state, node->child[branch]);
 
-    if (x->child[branch]->level != x->level) {
-        assert(x->child[branch]->level == x->level - 1);
-        return x;
+    int level_diff = node->level - node->child[branch]->level;
+    if (level_diff) {
+        assert(level_diff == 1);
+        return node;
     }
 
     if (branch == 0) {
-        x = tree_map_rotate(x, 0);
+        node = tree_map_rotate(node, 0);
     }
     // Check if we child 1-1 have the same level
-    if (x->level == x->child[1]->child[1]->level) {
-        x = tree_map_rotate(x, 1);
-        x->level++;
+    if (node->level == node->child[1]->child[1]->level) {
+        node = tree_map_rotate(node, 1);
+        node->level++;
     }
 
-    return x;
+    return node;
 }
 
 void *tree_map_put(tree_map *t, tree_key key)
 {
     rec_state state = {.tree = t, .key = &key};
-    t->root = tree_map_put_rec(&state, t->root);
-    return state.result->value;
+    t->root = (tree_node *) tree_map_put_rec(&state, (tree_link *) t->root);
+    return ((tree_node *) state.result)->value;
 }
 
 void *tree_map_get(tree_map *t, tree_key key)
 {
     tree_node *node = t->root;
-    while (node != &empty) {
+    while (node->link.level != 0) {
         int d = tree_key_compare(&key, &node->key);
         if (d == 0) {
             return node->value;
         }
-        node = node->child[d > 0];
+        node = (tree_node *) node->link.child[d > 0];
     }
     return NULL;
 }
 
-static tree_node *tree_map_left_max_key(tree_node *node)
+static tree_link *tree_map_left_max_key(tree_link *node)
 {
-    tree_node *r = node->child[0];
-    while (r->child[1] != &empty) {
+    tree_link *r = node->child[0];
+    while (r->child[1]->level != 0) {
         r = r->child[1];
     }
-    assert(r->child[0] == &empty);
     return r;
 }
 
-static tree_node *tree_map_fix_node_delete(tree_node *node, unsigned b)
+static tree_link *tree_map_fix_node_delete(tree_link *node, unsigned b)
 {
     // The only change that can happen is that child's level is decreased by 1. If level becomes
     // too low, we need to decrement it and fix AA properties.
@@ -173,7 +158,7 @@ static tree_node *tree_map_fix_node_delete(tree_node *node, unsigned b)
     node->level--;
 
     // Restore AA properties at this node.
-    tree_node *x = node, *y = node->child[1 - b];
+    tree_link *x = node, *y = node->child[1 - b];
     if (b == 0) {
         // Three cases are possible.
         //
@@ -279,31 +264,29 @@ static tree_node *tree_map_fix_node_delete(tree_node *node, unsigned b)
     }
 }
 
-static tree_node *tree_map_del_rec(rec_state *state, tree_node *node)
+static tree_link *tree_map_del_rec(rec_state *state, tree_link *node)
 {
-    if (node == &empty) {
+    if (node->level == 0) {
         return node;
     }
 
-    int d = tree_key_compare(state->key, &node->key);
+    int d = tree_key_compare(state->key, &((tree_node *) node)->key);
     int branch = d > 0;
     if (d == 0) {
-        if (node->child[0] == &empty) {
+        if (node->child[0]->level == 0) {
             state->result = node;
             return node->child[1]; // Replacement of this node
         }
 
-        tree_node *left_max = tree_map_left_max_key(node);
+        tree_node *left_max = (tree_node *) tree_map_left_max_key((tree_link *) node);
         state->key = &left_max->key; // New key to delete
 
         // @branch correctly points to 0
         node->child[0] = tree_map_del_rec(state, node->child[0]);
 
         // Removed node replaces this node. This node becomes removed.
-        tree_node *t = state->result;
-        t->level = node->level;
-        t->child[0] = node->child[0];
-        t->child[1] = node->child[1];
+        tree_link *t = state->result;
+        *t = *node;
         state->result = node;
         node = t;
     } else {
@@ -316,23 +299,20 @@ static tree_node *tree_map_del_rec(rec_state *state, tree_node *node)
 bool tree_map_del(tree_map *t, tree_key key)
 {
     rec_state state = {.tree = t, .key = &key};
-    t->root = tree_map_del_rec(&state, t->root);
+    t->root = (tree_node *) tree_map_del_rec(&state, (tree_link *) t->root);
     if (!state.result) {
         return false;
     }
-    t->nmm->release(t->nmm_ctx, state.result);
+    t->nmm->release(t->nmm_ctx, (tree_node *) state.result);
     t->size--;
     return true;
 }
 
-const tree_node *tree_map_path(tree_map *t, int path_len, ...)
+const tree_node *tree_map_path(tree_map *t, int path_len, const int *path)
 {
-    va_list va;
-    va_start(va, path_len);
-    const tree_node *p = t->root;
+    const tree_link *p = (tree_link *) t->root;
     for (int i = 0; i < path_len; i++) {
-        p = p->child[va_arg(va, int)];
+        p = p->child[path[i]];
     }
-    va_end(va);
-    return p;
+    return (const tree_node *) p;
 }

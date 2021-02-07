@@ -5,7 +5,6 @@
 
 #include <stdalign.h>
 #include <stdbool.h>
-#include <stdarg.h>
 #include <stddef.h>
 #include <stdlib.h>
 
@@ -13,7 +12,13 @@
 extern "C" {
 #endif
 
-// AA tree implementation.
+// AA tree map implementation.
+
+#define TREE_MAP_PATH(t, ...) \
+    ({ \
+        const int path[] = {__VA_ARGS__}; \
+        tree_map_path(t, array_sizeof(path), path); \
+    })
 
 typedef struct {
     long nk;
@@ -29,9 +34,15 @@ inline static long tree_key_compare(const tree_key *a, const tree_key *b)
     return a->nk - b->nk;
 }
 
-typedef struct tree_node {
-    struct tree_node *child[2];
+typedef struct tree_link {
+    struct tree_link *child[2];
     unsigned level;
+} tree_link;
+
+typedef struct {
+    // Link must come first, becase we cast tree_link* <-> tree_node*.
+    tree_link link;
+
     tree_key key;
     alignas(void *) char value[];
 } tree_node;
@@ -44,6 +55,7 @@ typedef struct {
 typedef struct {
     tree_node *root;
     size_t size;
+    tree_link empty;
 
     node_memmgr *nmm;
     void *nmm_ctx;
@@ -52,14 +64,11 @@ typedef struct {
 
 tree_map tree_map_new(node_memmgr *nmm, void *ctx, size_t value_size);
 void tree_map_destroy(tree_map *t);
-bool tree_map_is_null(const tree_node *n);
 void *tree_map_put(tree_map *t, tree_key key);
 void *tree_map_get(tree_map *t, tree_key key);
 bool tree_map_del(tree_map *t, tree_key key);
 
-const tree_node *tree_map_path(tree_map *t, int path_len, ...);
-
-tree_node *tree_map_empty(void);
+const tree_node *tree_map_path(tree_map *t, int path_len, const int *path);
 
 // Check AA tree properties. Returns node where property is violated.
 const tree_node *tree_map_check(const tree_map *t);

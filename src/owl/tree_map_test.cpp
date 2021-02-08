@@ -5,7 +5,7 @@
 #include <iostream>
 
 #define TREE_MAP_LEVEL(t, ...) TREE_MAP_PATH(t, __VA_ARGS__)->link.level
-#define TREE_MAP_LONG_KEY(t, ...) TREE_MAP_PATH(t, __VA_ARGS__)->key.nk
+#define TREE_MAP_KEY(t, ...) TREE_MAP_PATH(t, __VA_ARGS__)->key
 
 struct node_memmgr_ctx {
     unsigned n_nodes = 0;
@@ -31,7 +31,7 @@ static void print_child(const tree_node *c, const char *name)
     if (c->link.level == 0) {
         std::cerr << "null";
     } else {
-        std::cerr << "key=" << c->key.nk << " level=" << c->link.level;
+        std::cerr << "key=" << c->key << " level=" << c->link.level;
     }
 }
 
@@ -40,7 +40,7 @@ static bool check_tree_map(const tree_map *t)
     const tree_node *e = tree_map_check(t);
     if (e) {
         std::cerr << "AA property violated:\n";
-        std::cerr << "error at node key=" << e->key.nk << " level=" << e->link.level << "\n";
+        std::cerr << "error at node key=" << e->key<< " level=" << e->link.level << "\n";
 
         std::cerr << "  ";
         print_child((tree_node *) e->link.child[0], "0");
@@ -61,10 +61,10 @@ static bool check_tree_map(const tree_map *t)
 
 static node_memmgr vtbl_nmm{.allocatez = allocatez, .release = release};
 
-static tree_node *new_node(tree_map *t, long k, unsigned level)
+static tree_node *new_node(tree_map *t, long key, unsigned level)
 {
     auto n = (tree_node *) vtbl_nmm.allocatez(t->nmm_ctx, sizeof(tree_node) + sizeof(int));
-    n->key.nk = k;
+    n->key = key;
     n->link.level = level;
     n->link.child[0] = &t->empty;
     n->link.child[1] = &t->empty;
@@ -79,27 +79,27 @@ TEST(tree_map, tree_map_put)
     EXPECT_EQ(0, t.size);
 
     *(int *) tree_map_put(&t, tree_key_number(300)) = 1;
-    EXPECT_EQ(300, t.root->key.nk);
-    EXPECT_EQ(1, t.root->link.level);
-    EXPECT_EQ(0, t.root->link.child[0]->level);
-    EXPECT_EQ(0, t.root->link.child[1]->level);
+    EXPECT_EQ(300, TREE_MAP_KEY(&t));
+    EXPECT_EQ(1, TREE_MAP_LEVEL(&t));
+    EXPECT_EQ(0, TREE_MAP_LEVEL(&t, 0));
+    EXPECT_EQ(0, TREE_MAP_LEVEL(&t, 1));
     EXPECT_TRUE(check_tree_map(&t));
 
     *(int *) tree_map_put(&t, tree_key_number(100)) = 2;
     EXPECT_EQ(1, TREE_MAP_LEVEL(&t));
-    EXPECT_EQ(100, TREE_MAP_LONG_KEY(&t));
+    EXPECT_EQ(100, TREE_MAP_KEY(&t));
     EXPECT_EQ(0, TREE_MAP_LEVEL(&t, 0));
     EXPECT_EQ(1, TREE_MAP_LEVEL(&t, 1));
-    EXPECT_EQ(300, TREE_MAP_LONG_KEY(&t, 1));
+    EXPECT_EQ(300, TREE_MAP_KEY(&t, 1));
     EXPECT_TRUE(check_tree_map(&t));
 
     *(int *) tree_map_put(&t, tree_key_number(200)) = 3;
     EXPECT_EQ(2, TREE_MAP_LEVEL(&t));
-    EXPECT_EQ(200, TREE_MAP_LONG_KEY(&t));
+    EXPECT_EQ(200, TREE_MAP_KEY(&t));
     EXPECT_EQ(1, TREE_MAP_LEVEL(&t, 0));
-    EXPECT_EQ(100, TREE_MAP_LONG_KEY(&t, 0));
+    EXPECT_EQ(100, TREE_MAP_KEY(&t, 0));
     EXPECT_EQ(1, TREE_MAP_LEVEL(&t, 1));
-    EXPECT_EQ(300, TREE_MAP_LONG_KEY(&t, 1));
+    EXPECT_EQ(300, TREE_MAP_KEY(&t, 1));
     EXPECT_TRUE(check_tree_map(&t));
 
     EXPECT_EQ(3, t.size);
@@ -131,13 +131,13 @@ TEST(tree_map, tree_map_put_skew_split)
     tree_map_put(&t, tree_key_number(200));
 
     EXPECT_EQ(3, TREE_MAP_LEVEL(&t));
-    EXPECT_EQ(500, TREE_MAP_LONG_KEY(&t));
+    EXPECT_EQ(500, TREE_MAP_KEY(&t));
 
     EXPECT_EQ(2, TREE_MAP_LEVEL(&t, 0));
-    EXPECT_EQ(250, TREE_MAP_LONG_KEY(&t, 0));
+    EXPECT_EQ(250, TREE_MAP_KEY(&t, 0));
 
     EXPECT_EQ(2, TREE_MAP_LEVEL(&t, 1));
-    EXPECT_EQ(750, TREE_MAP_LONG_KEY(&t, 1));
+    EXPECT_EQ(750, TREE_MAP_KEY(&t, 1));
 }
 
 TEST(tree_map, tree_map_del)

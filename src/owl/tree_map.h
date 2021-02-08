@@ -20,18 +20,16 @@ extern "C" {
         tree_map_path(t, array_sizeof(path), path); \
     })
 
-typedef struct {
-    long nk;
-} tree_key;
+typedef long tree_key;
 
 inline static tree_key tree_key_number(long n)
 {
-    return (tree_key){.nk = n};
+    return n;
 }
 
 inline static long tree_key_compare(const tree_key *a, const tree_key *b)
 {
-    return a->nk - b->nk;
+    return *a - *b;
 }
 
 typedef struct tree_link {

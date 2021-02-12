@@ -14,12 +14,6 @@ extern "C" {
 
 // AA tree map implementation.
 
-#define TREE_MAP_PATH(t, ...) \
-    ({ \
-        const int path[] = {__VA_ARGS__}; \
-        tree_map_path(t, array_sizeof(path), path); \
-    })
-
 typedef long tree_key;
 
 inline static tree_key tree_key_number(long n)
@@ -37,7 +31,7 @@ typedef struct tree_link {
     unsigned level;
 } tree_link;
 
-typedef struct {
+typedef struct tree_node {
     // Link must come first, becase we cast tree_link* <-> tree_node*.
     tree_link link;
 
@@ -62,19 +56,26 @@ typedef struct {
 
 tree_map tree_map_new(node_memmgr *nmm, void *ctx, size_t value_size);
 void tree_map_destroy(tree_map *t);
+
+inline static size_t tree_map_size(const tree_map *t)
+{
+    return t->size;
+}
+
 void *tree_map_put(tree_map *t, tree_key key);
 void *tree_map_get(tree_map *t, tree_key key);
 bool tree_map_del(tree_map *t, tree_key key);
 
 const tree_node *tree_map_path(tree_map *t, int path_len, const int *path);
 
+#define tree_map_path_va(t, ...) \
+    ({ \
+        const int path[] = {__VA_ARGS__}; \
+        tree_map_path(t, array_sizeof(path), path); \
+    })
+
 // Check AA tree properties. Returns node where property is violated.
 const tree_node *tree_map_check(const tree_map *t);
-
-inline static size_t tree_map_size(const tree_map *t)
-{
-    return t->size;
-}
 
 #ifdef __cplusplus
 }

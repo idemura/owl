@@ -21,16 +21,16 @@ typedef uint16_t u64;
 typedef float f32;
 typedef double f64;
 
-// Hungarian notation:
+// Overload type notation:
 // I - i32
-// J - u32 (next to I)
+// UI - u32 (next to I)
 // L - i64
-// M - u64 (next to L)
-// U - size_t
-// Z - strz
+// UL - u64 (next to L)
+// N - size_t
+// SZ - strz
 // A - array (pointer + size)
 // P - pointer
-// F - f32
-// D - f64
+// F32 - f32
+// F64 - f64
 
 #endif

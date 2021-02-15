@@ -76,6 +76,8 @@ typedef struct {
 tree_map tree_map_new(
         compare_keys_fn compare_keys, node_memmgr *nmm, void *nmm_ctx, size_t value_size);
 
+tree_map tree_map_clone(const tree_map *t);
+
 void tree_map_destroy(tree_map *t);
 
 inline static size_t tree_map_size(const tree_map *t)

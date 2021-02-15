@@ -36,6 +36,25 @@ tree_map tree_map_new(
     return t;
 }
 
+tree_link *tree_map_clone_rec(tree_map *c, const tree_map *t, const tree_link *node)
+{
+    if (node == &t->empty) {
+        return &c->empty;
+    }
+    tree_node *n = c->nmm->allocatez(c->nmm_ctx, c->node_size);
+    memcpy(n, node, c->node_size);
+    n->link.child[0] = tree_map_clone_rec(c, t, node->child[0]);
+    n->link.child[1] = tree_map_clone_rec(c, t, node->child[1]);
+    return (tree_link *) n;
+}
+
+tree_map tree_map_clone(const tree_map *t)
+{
+    tree_map c = *t;
+    c.root = (tree_node *) tree_map_clone_rec(&c, t, (tree_link *) t->root);
+    return c;
+}
+
 static const tree_link *tree_map_check_rec(const tree_link *node)
 {
     if (node->level == 0) {

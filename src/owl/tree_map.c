@@ -8,6 +8,17 @@ typedef struct {
     tree_link *result;
 } rec_state;
 
+static void tree_map_print_node(const tree_node *n)
+{
+    printf("node level=%d ", n->link.level);
+    if (n->key.sk) {
+        printf("key=\"%s\" (len=%ld)", n->key.sk, n->key.nk);
+    } else {
+        printf("key=%ld", n->key.nk);
+    }
+    printf("\n");
+}
+
 tree_map tree_map_new(
         compare_keys_fn compare_keys, node_memmgr *nmm, void *nmm_ctx, size_t value_size)
 {
@@ -155,7 +166,7 @@ static tree_link *tree_map_left_max_key(tree_link *node)
     return r;
 }
 
-static tree_link *tree_map_fix_node_delete(tree_link *node, unsigned b)
+static tree_link *tree_map_fix_node_delete(tree_link *node, int b)
 {
     // The only change that can happen is that child's level is decreased by 1. If level becomes
     // too low, we need to decrement it and fix AA properties.
@@ -168,7 +179,6 @@ static tree_link *tree_map_fix_node_delete(tree_link *node, unsigned b)
     // Restore AA properties at this node.
     tree_link *x = node, *y = node->child[1 - b];
     if (b == 0) {
-        printf("fix child 0\n");
         // Three cases are possible.
         //
         // Case 1:
@@ -201,15 +211,12 @@ static tree_link *tree_map_fix_node_delete(tree_link *node, unsigned b)
             // Case 2 and 3
             if (y->child[1]->level == y->level) {
                 // Case 2: split
-                printf("case 2\n");
                 x = tree_map_rotate(x, 1);
-            } else {
-                printf("case 3\n");
+                x->level++;
             }
             return x;
         }
 
-        printf("case 1\n");
         assert(x->level == x->child[1]->level - 1);
         // Case 1: move child[1] up
         x = tree_map_rotate(x, 1);
@@ -225,7 +232,6 @@ static tree_link *tree_map_fix_node_delete(tree_link *node, unsigned b)
         // Check if node A violates right grandchild property: split, skew.
         y = x->child[0];
         if (y->level == y->child[1]->child[1]->level) {
-            printf("complex case 1\n");
             x->child[0] = tree_map_rotate(x->child[0], 1);
             x->child[0]->level++;
             x = tree_map_rotate(x, 0);
@@ -233,7 +239,6 @@ static tree_link *tree_map_fix_node_delete(tree_link *node, unsigned b)
 
         return x;
     } else {
-        printf("fix child 1\n");
         // Two cases are possible based on level of the right child of left child.
         // Pictures before level decrement.
         //
@@ -293,7 +298,6 @@ static tree_link *tree_map_del_rec(tree_map *t, rec_state *state, tree_link *nod
             return node->child[1]; // Replacement of this node
         }
 
-        printf("look for left max key\n");
         tree_node *left_max = (tree_node *) tree_map_left_max_key((tree_link *) node);
         state->key = &left_max->key; // New key to delete
 

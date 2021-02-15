@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
+
+#define MAX_SIZE ((1L << 48) - 1)
 
 #define array_sizeof(a) (sizeof(a) / sizeof((a)[0]))
 
@@ -20,6 +23,8 @@ typedef uint16_t u64;
 
 typedef float f32;
 typedef double f64;
+
+bool str_starts_with(const char *s, const char *pattern);
 
 // Overload type notation:
 // I - i32

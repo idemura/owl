@@ -1,6 +1,6 @@
 #include "foundation/call_stack.h"
 
-#include <execinfo.h>
+#include <libunwind.h>
 #include <signal.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -48,11 +48,45 @@ void call_stack_dump(int fd, int sig)
 {
     fd_printf(fd, "binary: %s\n", s_bin_name);
     fd_printf(fd, "signal: %d\n", sig);
-    void *st[25];
-    int st_size = backtrace(st, array_sizeof(st));
-    fd_printf(fd, "stack_trace:\n");
-    for (int i = 0; i < st_size; i++) {
-        fd_printf(fd, "  0x%p\n", st[i]);
+
+    fd_printf(fd, "stack:\n");
+
+    unw_context_t ctx;
+    unw_getcontext(&ctx);
+
+    unw_cursor_t cursor;
+    unw_init_local(&cursor, &ctx);
+
+    const int max_frames = 40;
+    int c_frame = 0;
+    while (unw_step(&cursor) > 0 && c_frame < max_frames) {
+        unw_word_t ip, sp, offset = 0;
+        char buf[80];
+
+        unw_get_reg(&cursor, UNW_REG_IP, &ip);
+        unw_get_reg(&cursor, UNW_REG_SP, &sp);
+
+        if (unw_get_proc_name(&cursor, buf, sizeof buf, &offset) == 0) {
+            if (c_frame == 0
+                && (str_starts_with(buf, "_sig") || strcmp(buf, "sig_segv_handler") == 0)) {
+                continue;
+            }
+        } else {
+            buf[0] = 0;
+        }
+
+        fd_printf(fd, "  ip=0x%lx sp=0x%lx", (long) ip, (long) sp);
+        if (buf[0]) {
+            fd_printf(fd, " %s +0x%02lx", buf, (long) offset);
+        }
+        fd_printf(fd, "\n");
+
+        c_frame++;
     }
+
+    if (c_frame == max_frames) {
+        fd_printf(fd, "  ...\n");
+    }
+
     fd_printf(fd, "\n");
 }

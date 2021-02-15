@@ -1,6 +1,8 @@
 #include "foundation/lang.h"
 
-void lang_empty(void)
+static_assert(sizeof(long) == 8, "64 bit system assumed");
+
+bool str_starts_with(const char *s, const char *pattern)
 {
-    // To make .a contain something
+    return memcmp(s, pattern, strlen(pattern)) == 0;
 }

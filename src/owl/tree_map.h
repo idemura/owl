@@ -39,7 +39,7 @@ inline static tree_key tree_key_strz(const char *s)
 
 typedef struct tree_link {
     struct tree_link *child[2];
-    unsigned level;
+    int level;
 } tree_link;
 
 typedef struct tree_node {

@@ -2,9 +2,11 @@
 #define FOUNDATION_LANG_H
 
 #include <assert.h>
+#include <stdalign.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define MAX_SIZE ((1L << 48) - 1)

@@ -1,7 +1,6 @@
 #include "owl/tree_map.h"
 
 #include <gtest/gtest.h>
-#include <stdio.h>
 
 #include <chrono>
 #include <iostream>
@@ -11,36 +10,36 @@
 #define GET_TREE_NODE_LEVEL(t, ...) tree_map_path_va(t, __VA_ARGS__)->link.level
 #define GET_TREE_NODE_KEY(t, ...) tree_map_path_va(t, __VA_ARGS__)->key.nk
 
-struct node_memmgr_ctx {
+struct test_memmgr_ctx {
     long n_nodes = 0;
 };
 
-static tree_node *nmm_allocatez(void *ctx, size_t size)
+static void *test_allocatez(void *ctx, size_t size)
 {
     if (ctx) {
-        auto *test_ctx = (node_memmgr_ctx *) ctx;
+        auto *test_ctx = (test_memmgr_ctx *) ctx;
         test_ctx->n_nodes++;
     }
-    return (tree_node *) calloc(1, size);
+    return calloc(1, size);
 }
 
-static void nmm_release(void *ctx, tree_node *n)
+static void test_release(void *ctx, void *ptr)
 {
     if (ctx) {
-        auto *test_ctx = (node_memmgr_ctx *) ctx;
+        auto *test_ctx = (test_memmgr_ctx *) ctx;
         test_ctx->n_nodes--;
     }
-    return free(n);
+    return free(ptr);
 }
 
-static long key_compare(const tree_key *a, const tree_key *b)
+static memmgr vtbl_mm{.allocatez = test_allocatez, .release = test_release};
+
+static long skey_compare(const skey_t *a, const skey_t *b)
 {
     return a->nk - b->nk;
 }
 
-static node_memmgr vtbl_nmm{.allocatez = nmm_allocatez, .release = nmm_release};
-
-static std::string to_string(tree_key key)
+static std::string to_string(skey_t key)
 {
     return key.sk ? std::string{key.sk} : std::to_string(key.nk);
 }
@@ -110,9 +109,9 @@ static void print_tree(const tree_map &t, std::ostream &os)
     }
 }
 
-static tree_node *new_node(tree_map *t, tree_key key, int level)
+static tree_node *new_node(tree_map *t, skey_t key, int level)
 {
-    auto n = (tree_node *) vtbl_nmm.allocatez(t->nmm_ctx, sizeof(tree_node) + sizeof(int));
+    auto n = (tree_node *) vtbl_mm.allocatez(t->mm_ctx, sizeof(tree_node) + sizeof(int));
     n->key = key;
     n->link.level = level;
     n->link.child[0] = &t->empty;
@@ -135,7 +134,7 @@ static void construct_tree(tree_map *t, const node_proto *protos_p, size_t proto
     std::map<long, tree_node *> nodes;
     for (size_t i = 0; i < protos_n; i++) {
         long nk = protos_p[i].key;
-        nodes.emplace(nk, new_node(t, tree_key_number(nk), protos_p[i].level));
+        nodes.emplace(nk, new_node(t, skey_number(nk), protos_p[i].level));
     }
     for (size_t i = 0; i < protos_n; i++) {
         auto *n = nodes[protos_p[i].key];
@@ -158,10 +157,10 @@ static void construct_tree_check(tree_map *t, const node_proto *protos_p, size_t
 
 TEST(tree_map, checks)
 {
-    node_memmgr_ctx nmm_ctx;
+    test_memmgr_ctx mm_ctx;
     {
         // Left child violated
-        tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+        tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
         node_proto protos[] = {
                 {500, 1, 250, 750},
                 {250, 1},
@@ -172,7 +171,7 @@ TEST(tree_map, checks)
     }
     {
         // Left child violated
-        tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+        tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
         node_proto protos[] = {
                 {500, 3, 250, 750},
                 {250, 1},
@@ -185,7 +184,7 @@ TEST(tree_map, checks)
     }
     {
         // Left child violated
-        tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+        tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
         node_proto protos[] = {
                 {500, 1, 250, 750},
                 {250, 1},
@@ -196,7 +195,7 @@ TEST(tree_map, checks)
     }
     {
         // Right child
-        tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+        tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
         node_proto protos[] = {
                 {500, 3, 250, 750},
                 {250, 2, 200, 300},
@@ -209,7 +208,7 @@ TEST(tree_map, checks)
     }
     {
         // Right grand child
-        tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+        tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
         node_proto protos[] = {
                 {500, 2, 250, 750},
                 {250, 1},
@@ -226,18 +225,18 @@ TEST(tree_map, checks)
 
 TEST(tree_map, put_get)
 {
-    node_memmgr_ctx nmm_ctx;
-    tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, sizeof(int));
+    test_memmgr_ctx mm_ctx;
+    tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, sizeof(int));
     EXPECT_EQ(0, tree_map_size(&t));
 
-    *(int *) tree_map_put(&t, tree_key_number(300)) = 1;
+    *(int *) tree_map_put(&t, skey_number(300)) = 1;
     EXPECT_EQ(300, GET_TREE_NODE_KEY(&t));
     EXPECT_EQ(1, GET_TREE_NODE_LEVEL(&t));
     EXPECT_EQ(0, GET_TREE_NODE_LEVEL(&t, 0));
     EXPECT_EQ(0, GET_TREE_NODE_LEVEL(&t, 1));
     ASSERT_TRUE(check_tree(t));
 
-    *(int *) tree_map_put(&t, tree_key_number(100)) = 2;
+    *(int *) tree_map_put(&t, skey_number(100)) = 2;
     EXPECT_EQ(1, GET_TREE_NODE_LEVEL(&t));
     EXPECT_EQ(100, GET_TREE_NODE_KEY(&t));
     EXPECT_EQ(0, GET_TREE_NODE_LEVEL(&t, 0));
@@ -245,7 +244,7 @@ TEST(tree_map, put_get)
     EXPECT_EQ(300, GET_TREE_NODE_KEY(&t, 1));
     ASSERT_TRUE(check_tree(t));
 
-    *(int *) tree_map_put(&t, tree_key_number(200)) = 3;
+    *(int *) tree_map_put(&t, skey_number(200)) = 3;
     EXPECT_EQ(2, GET_TREE_NODE_LEVEL(&t));
     EXPECT_EQ(200, GET_TREE_NODE_KEY(&t));
     EXPECT_EQ(1, GET_TREE_NODE_LEVEL(&t, 0));
@@ -256,18 +255,18 @@ TEST(tree_map, put_get)
 
     EXPECT_EQ(3, tree_map_size(&t));
 
-    EXPECT_EQ(2, *(int *) tree_map_get(&t, tree_key_number(100)));
-    EXPECT_EQ(3, *(int *) tree_map_get(&t, tree_key_number(200)));
-    EXPECT_EQ(1, *(int *) tree_map_get(&t, tree_key_number(300)));
+    EXPECT_EQ(2, *(int *) tree_map_get(&t, skey_number(100)));
+    EXPECT_EQ(3, *(int *) tree_map_get(&t, skey_number(200)));
+    EXPECT_EQ(1, *(int *) tree_map_get(&t, skey_number(300)));
 
     tree_map_destroy(&t);
-    EXPECT_EQ(0, nmm_ctx.n_nodes);
+    EXPECT_EQ(0, mm_ctx.n_nodes);
 }
 
 TEST(tree_map, put_skew_split)
 {
-    node_memmgr_ctx nmm_ctx;
-    tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+    test_memmgr_ctx mm_ctx;
+    tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
 
     node_proto protos[] = {
             {500, 2, 250, 750},
@@ -279,7 +278,7 @@ TEST(tree_map, put_skew_split)
     };
     construct_tree_check(&t, protos, array_sizeof(protos));
 
-    tree_map_put(&t, tree_key_number(200));
+    tree_map_put(&t, skey_number(200));
     ASSERT_TRUE(check_tree(t));
 
     EXPECT_EQ(3, GET_TREE_NODE_LEVEL(&t));
@@ -292,13 +291,13 @@ TEST(tree_map, put_skew_split)
     EXPECT_EQ(750, GET_TREE_NODE_KEY(&t, 1));
 
     tree_map_destroy(&t);
-    EXPECT_EQ(0, nmm_ctx.n_nodes);
+    EXPECT_EQ(0, mm_ctx.n_nodes);
 }
 
 TEST(tree_map, del_h1_c0)
 {
-    node_memmgr_ctx nmm_ctx;
-    tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+    test_memmgr_ctx mm_ctx;
+    tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
 
     node_proto protos[] = {
             {500, 2, 250, 750},
@@ -307,7 +306,7 @@ TEST(tree_map, del_h1_c0)
     };
     construct_tree_check(&t, protos, array_sizeof(protos));
 
-    tree_map_del(&t, tree_key_number(250));
+    tree_map_del(&t, skey_number(250));
     ASSERT_TRUE(check_tree(t));
 
     EXPECT_EQ(2, tree_map_size(&t));
@@ -318,13 +317,13 @@ TEST(tree_map, del_h1_c0)
     EXPECT_EQ(750, GET_TREE_NODE_KEY(&t, 1));
 
     tree_map_destroy(&t);
-    EXPECT_EQ(0, nmm_ctx.n_nodes);
+    EXPECT_EQ(0, mm_ctx.n_nodes);
 }
 
 TEST(tree_map, del_h1_c1)
 {
-    node_memmgr_ctx nmm_ctx;
-    tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+    test_memmgr_ctx mm_ctx;
+    tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
 
     node_proto protos[] = {
             {500, 2, 250, 750},
@@ -333,7 +332,7 @@ TEST(tree_map, del_h1_c1)
     };
     construct_tree_check(&t, protos, array_sizeof(protos));
 
-    tree_map_del(&t, tree_key_number(750));
+    tree_map_del(&t, skey_number(750));
     ASSERT_TRUE(check_tree(t));
 
     EXPECT_EQ(2, tree_map_size(&t));
@@ -344,13 +343,13 @@ TEST(tree_map, del_h1_c1)
     EXPECT_EQ(500, GET_TREE_NODE_KEY(&t, 1));
 
     tree_map_destroy(&t);
-    EXPECT_EQ(0, nmm_ctx.n_nodes);
+    EXPECT_EQ(0, mm_ctx.n_nodes);
 }
 
 TEST(tree_map, del_h1_root)
 {
-    node_memmgr_ctx nmm_ctx;
-    tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+    test_memmgr_ctx mm_ctx;
+    tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
 
     node_proto protos[] = {
             {500, 2, 250, 750},
@@ -359,7 +358,7 @@ TEST(tree_map, del_h1_root)
     };
     construct_tree_check(&t, protos, array_sizeof(protos));
 
-    tree_map_del(&t, tree_key_number(500));
+    tree_map_del(&t, skey_number(500));
     ASSERT_TRUE(check_tree(t));
 
     EXPECT_EQ(2, tree_map_size(&t));
@@ -370,13 +369,13 @@ TEST(tree_map, del_h1_root)
     EXPECT_EQ(750, GET_TREE_NODE_KEY(&t, 1));
 
     tree_map_destroy(&t);
-    EXPECT_EQ(0, nmm_ctx.n_nodes);
+    EXPECT_EQ(0, mm_ctx.n_nodes);
 }
 
 TEST(tree_map, del_c0_case3_case1_1)
 {
-    node_memmgr_ctx nmm_ctx;
-    tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+    test_memmgr_ctx mm_ctx;
+    tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
 
     // clang-format off
     node_proto protos[] = {
@@ -408,11 +407,11 @@ TEST(tree_map, del_c0_case3_case1_1)
     construct_tree_check(&t, protos, array_sizeof(protos));
 
     const long rm_key = 160;
-    tree_map_del(&t, tree_key_number(rm_key));
+    tree_map_del(&t, skey_number(rm_key));
     ASSERT_TRUE(check_tree(t));
 
     for (size_t i = 0; i < array_sizeof(protos); i++) {
-        auto k = tree_key_number(protos[i].key);
+        auto k = skey_number(protos[i].key);
         if (protos[i].key == rm_key) {
             EXPECT_TRUE(tree_map_get(&t, k) == nullptr);
         } else {
@@ -438,13 +437,13 @@ TEST(tree_map, del_c0_case3_case1_1)
     EXPECT_EQ(850, GET_TREE_NODE_KEY(&t, 1));
 
     tree_map_destroy(&t);
-    EXPECT_EQ(0, nmm_ctx.n_nodes);
+    EXPECT_EQ(0, mm_ctx.n_nodes);
 }
 
 TEST(tree_map, del_c0_case3_case1_2)
 {
-    node_memmgr_ctx nmm_ctx;
-    tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+    test_memmgr_ctx mm_ctx;
+    tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
 
     // clang-format off
     node_proto protos[] = {
@@ -480,11 +479,11 @@ TEST(tree_map, del_c0_case3_case1_2)
     construct_tree_check(&t, protos, array_sizeof(protos));
 
     const long rm_key = 160;
-    tree_map_del(&t, tree_key_number(rm_key));
+    tree_map_del(&t, skey_number(rm_key));
     ASSERT_TRUE(check_tree(t));
 
     for (size_t i = 0; i < array_sizeof(protos); i++) {
-        auto k = tree_key_number(protos[i].key);
+        auto k = skey_number(protos[i].key);
         if (protos[i].key == rm_key) {
             EXPECT_TRUE(tree_map_get(&t, k) == nullptr);
         } else {
@@ -510,13 +509,13 @@ TEST(tree_map, del_c0_case3_case1_2)
     EXPECT_EQ(850, GET_TREE_NODE_KEY(&t, 1, 1));
 
     tree_map_destroy(&t);
-    EXPECT_EQ(0, nmm_ctx.n_nodes);
+    EXPECT_EQ(0, mm_ctx.n_nodes);
 }
 
 TEST(tree_map, del_c1_case1)
 {
-    node_memmgr_ctx nmm_ctx;
-    tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+    test_memmgr_ctx mm_ctx;
+    tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
 
     // clang-format off
     node_proto protos[] = {
@@ -544,11 +543,11 @@ TEST(tree_map, del_c1_case1)
     construct_tree_check(&t, protos, array_sizeof(protos));
 
     const long rm_key = 860;
-    tree_map_del(&t, tree_key_number(rm_key));
+    tree_map_del(&t, skey_number(rm_key));
     ASSERT_TRUE(check_tree(t));
 
     for (size_t i = 0; i < array_sizeof(protos); i++) {
-        auto k = tree_key_number(protos[i].key);
+        auto k = skey_number(protos[i].key);
         if (protos[i].key == rm_key) {
             EXPECT_TRUE(tree_map_get(&t, k) == nullptr);
         } else {
@@ -574,13 +573,13 @@ TEST(tree_map, del_c1_case1)
     EXPECT_EQ(650, GET_TREE_NODE_KEY(&t, 1, 1));
 
     tree_map_destroy(&t);
-    EXPECT_EQ(0, nmm_ctx.n_nodes);
+    EXPECT_EQ(0, mm_ctx.n_nodes);
 }
 
 TEST(tree_map, del_c1_case2)
 {
-    node_memmgr_ctx nmm_ctx;
-    tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+    test_memmgr_ctx mm_ctx;
+    tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
 
     // clang-format off
     node_proto protos[] = {
@@ -604,11 +603,11 @@ TEST(tree_map, del_c1_case2)
     construct_tree_check(&t, protos, array_sizeof(protos));
 
     const long rm_key = 860;
-    tree_map_del(&t, tree_key_number(rm_key));
+    tree_map_del(&t, skey_number(rm_key));
     ASSERT_TRUE(check_tree(t));
 
     for (size_t i = 0; i < array_sizeof(protos); i++) {
-        auto k = tree_key_number(protos[i].key);
+        auto k = skey_number(protos[i].key);
         if (protos[i].key == rm_key) {
             EXPECT_TRUE(tree_map_get(&t, k) == nullptr);
         } else {
@@ -634,13 +633,13 @@ TEST(tree_map, del_c1_case2)
     EXPECT_EQ(750, GET_TREE_NODE_KEY(&t, 1, 1, 1));
 
     tree_map_destroy(&t);
-    EXPECT_EQ(0, nmm_ctx.n_nodes);
+    EXPECT_EQ(0, mm_ctx.n_nodes);
 }
 
 TEST(tree_map, del_c0_middle)
 {
-    node_memmgr_ctx nmm_ctx;
-    tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+    test_memmgr_ctx mm_ctx;
+    tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
 
     // clang-format off
     node_proto protos[] = {
@@ -664,11 +663,11 @@ TEST(tree_map, del_c0_middle)
     construct_tree_check(&t, protos, array_sizeof(protos));
 
     const long rm_key = 250;
-    tree_map_del(&t, tree_key_number(rm_key));
+    tree_map_del(&t, skey_number(rm_key));
     ASSERT_TRUE(check_tree(t));
 
     for (size_t i = 0; i < array_sizeof(protos); i++) {
-        auto k = tree_key_number(protos[i].key);
+        auto k = skey_number(protos[i].key);
         if (protos[i].key == rm_key) {
             EXPECT_TRUE(tree_map_get(&t, k) == nullptr);
         } else {
@@ -677,13 +676,13 @@ TEST(tree_map, del_c0_middle)
     }
 
     tree_map_destroy(&t);
-    EXPECT_EQ(0, nmm_ctx.n_nodes);
+    EXPECT_EQ(0, mm_ctx.n_nodes);
 }
 
 TEST(tree_map, del_c1_middle)
 {
-    node_memmgr_ctx nmm_ctx;
-    tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+    test_memmgr_ctx mm_ctx;
+    tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
 
     // clang-format off
     node_proto protos[] = {
@@ -707,11 +706,11 @@ TEST(tree_map, del_c1_middle)
     construct_tree_check(&t, protos, array_sizeof(protos));
 
     const long rm_key = 750;
-    tree_map_del(&t, tree_key_number(rm_key));
+    tree_map_del(&t, skey_number(rm_key));
     ASSERT_TRUE(check_tree(t));
 
     for (size_t i = 0; i < array_sizeof(protos); i++) {
-        auto k = tree_key_number(protos[i].key);
+        auto k = skey_number(protos[i].key);
         if (protos[i].key == rm_key) {
             EXPECT_TRUE(tree_map_get(&t, k) == nullptr);
         } else {
@@ -720,13 +719,13 @@ TEST(tree_map, del_c1_middle)
     }
 
     tree_map_destroy(&t);
-    EXPECT_EQ(0, nmm_ctx.n_nodes);
+    EXPECT_EQ(0, mm_ctx.n_nodes);
 }
 
 TEST(tree_map, cloning)
 {
-    node_memmgr_ctx nmm_ctx;
-    tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+    test_memmgr_ctx mm_ctx;
+    tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
 
     // clang-format off
     node_proto protos[] = {
@@ -745,18 +744,18 @@ TEST(tree_map, cloning)
     tree_map_destroy(&t);
 
     for (size_t i = 0; i < array_sizeof(protos); i++) {
-        auto k = tree_key_number(protos[i].key);
+        auto k = skey_number(protos[i].key);
         EXPECT_TRUE(tree_map_get(&c, k) != nullptr);
     }
 
     tree_map_destroy(&c);
-    EXPECT_EQ(0, nmm_ctx.n_nodes);
+    EXPECT_EQ(0, mm_ctx.n_nodes);
 }
 
 static long generate_trees(std::vector<tree_node *> &result, int level)
 {
     if (level == 1) {
-        tree_node *n = nmm_allocatez(nullptr, sizeof(tree_node));
+        auto *n = (tree_node *) test_allocatez(nullptr, sizeof(tree_node));
         n->link.level = level;
         n->link.child[0] = nullptr;
         n->link.child[1] = nullptr;
@@ -772,7 +771,7 @@ static long generate_trees(std::vector<tree_node *> &result, int level)
 
     for (long i = prev_level_first; i < size; i++) {
         for (long j = prev_level_first; j < size; j++) {
-            tree_node *n = nmm_allocatez(nullptr, sizeof(tree_node));
+            tree_node *n = (tree_node *) test_allocatez(nullptr, sizeof(tree_node));
             n->link.level = level;
             n->link.child[0] = (tree_link *) result[i];
             n->link.child[1] = (tree_link *) result[j];
@@ -783,8 +782,8 @@ static long generate_trees(std::vector<tree_node *> &result, int level)
     for (long i = prev_level_first; i < size; i++) {
         for (long j = prev_level_first; j < size; j++) {
             for (long k = prev_level_first; k < size; k++) {
-                tree_node *n = nmm_allocatez(nullptr, sizeof(tree_node));
-                tree_node *m = nmm_allocatez(nullptr, sizeof(tree_node));
+                tree_node *n = (tree_node *) test_allocatez(nullptr, sizeof(tree_node));
+                tree_node *m = (tree_node *) test_allocatez(nullptr, sizeof(tree_node));
                 n->link.level = level;
                 m->link.level = level;
                 n->link.child[0] = (tree_link *) result[i];
@@ -805,7 +804,7 @@ static tree_node *build_tree(tree_map *t, const tree_node *node)
         return (tree_node *) &t->empty;
     }
 
-    auto *n = t->nmm->allocatez(t->nmm_ctx, sizeof(tree_node));
+    auto *n = (tree_node *) t->mm->allocatez(t->mm_ctx, sizeof(tree_node));
     *n = *node;
     n->link.child[0] = (tree_link *) build_tree(t, (tree_node *) node->link.child[0]);
     n->key.nk = t->size++;
@@ -822,24 +821,24 @@ TEST(tree_map, exhaustive_delete)
     long first = all_trees.size() - count;
 
     for (long i = first; i < all_trees.size(); i++) {
-        node_memmgr_ctx nmm_ctx;
-        tree_map t = tree_map_new(key_compare, &vtbl_nmm, &nmm_ctx, 0);
+        test_memmgr_ctx mm_ctx;
+        tree_map t = tree_map_new(skey_compare, &vtbl_mm, &mm_ctx, 0);
         t.root = build_tree(&t, all_trees[i]);
 
         for (long k = 0; k < tree_map_size(&t); k++) {
             tree_map c = tree_map_clone(&t);
             ASSERT_TRUE(check_tree(c));
-            tree_map_del(&c, tree_key_number(k));
+            tree_map_del(&c, skey_number(k));
             ASSERT_TRUE(check_tree(c));
             tree_map_destroy(&c);
         }
 
         tree_map_destroy(&t);
-        EXPECT_EQ(0, nmm_ctx.n_nodes);
+        EXPECT_EQ(0, mm_ctx.n_nodes);
     }
 
     for (auto *n : all_trees) {
-        nmm_release(nullptr, n);
+        test_release(nullptr, n);
     }
 
     std::chrono::duration<double, std::micro> duration =

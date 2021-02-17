@@ -9,7 +9,7 @@ typedef struct {
 
 static void tree_map_print_node(const tree_node *n)
 {
-    printf("node level=%d ", n->link.level);
+    printf("node level=%zu ", n->link.level);
     if (n->key.sk) {
         printf("key=\"%s\" (len=%ld)", n->key.sk, n->key.nk);
     } else {
@@ -18,11 +18,12 @@ static void tree_map_print_node(const tree_node *n)
     printf("\n");
 }
 
-tree_map tree_map_new(skey_compare_fn compare_keys, memmgr *mm, void *mm_ctx, size_t value_size)
+tree_map tree_map_new(
+        skey_compare_fn compare_keys, const memmgr *mm, void *mm_ctx, size_t value_size)
 {
     tree_map t = {
             .compare_keys = compare_keys,
-            .node_size = sizeof(tree_node) + value_size,
+            .node_size = sizeof(tree_node) + pad_size_l(value_size),
             .mm = mm,
             .mm_ctx = mm_ctx,
     };
@@ -37,7 +38,7 @@ tree_link *tree_map_clone_rec(tree_map *c, const tree_map *t, const tree_link *n
     if (node == &t->empty) {
         return &c->empty;
     }
-    tree_node *n = c->mm->allocatez(c->mm_ctx, c->node_size);
+    tree_node *n = c->mm->allocate_dirty(c->mm_ctx, c->node_size);
     memcpy(n, node, c->node_size);
     n->link.child[0] = tree_map_clone_rec(c, t, node->child[0]);
     n->link.child[1] = tree_map_clone_rec(c, t, node->child[1]);
@@ -89,7 +90,7 @@ const tree_node *tree_map_check(const tree_map *t)
     return (tree_node *) tree_map_check_rec((tree_link *) t->root);
 }
 
-static void tree_map_destroy_rec(memmgr *mm, void *mm_ctx, tree_link *node)
+static void tree_map_destroy_rec(const memmgr *mm, void *mm_ctx, tree_link *node)
 {
     if (node->level != 0) {
         tree_map_destroy_rec(mm, mm_ctx, node->child[0]);
@@ -101,6 +102,7 @@ static void tree_map_destroy_rec(memmgr *mm, void *mm_ctx, tree_link *node)
 void tree_map_destroy(tree_map *t)
 {
     tree_map_destroy_rec(t->mm, t->mm_ctx, (tree_link *) t->root);
+    *t = (tree_map){0};
 }
 
 // Rotate. Moves child @b up and makes node @n its `(1 - b)` child.
@@ -115,11 +117,12 @@ inline static tree_link *tree_map_rotate(tree_link *n, int b)
 static tree_link *tree_map_put_rec(tree_map *t, rec_state *state, tree_link *node)
 {
     if (node->level == 0) {
-        tree_node *n = t->mm->allocatez(t->mm_ctx, t->node_size);
+        tree_node *n = t->mm->allocate_dirty(t->mm_ctx, t->node_size);
         n->link.child[0] = &t->empty;
         n->link.child[1] = &t->empty;
         n->link.level = 1;
         n->key = *state->key;
+        memset(n->value, 0, t->node_size - sizeof(tree_node));
         t->size++;
         state->result = (tree_link *) n;
         return state->result;

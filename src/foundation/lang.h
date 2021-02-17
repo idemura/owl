@@ -3,30 +3,20 @@
 
 #include <assert.h>
 #include <stdalign.h>
+#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdnoreturn.h>
 #include <string.h>
 
-#define MAX_SIZE ((1L << 48) - 1)
+#define OWL_MAX_SIZE ((1L << 48) - 1)
 
 #define array_sizeof(a) (sizeof(a) / sizeof((a)[0]))
 
-typedef int8_t i8;
-typedef int16_t i16;
-typedef int32_t i32;
-typedef int64_t i64;
-
-typedef uint8_t u8;
-typedef uint16_t u16;
-typedef uint16_t u32;
-typedef uint16_t u64;
-
-typedef float f32;
-typedef double f64;
-
 bool str_starts_with(const char *s, const char *pattern);
+noreturn void die(const char *format, ...);
 
 // Overload type notation:
 // I - i32

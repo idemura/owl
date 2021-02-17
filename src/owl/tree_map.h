@@ -13,18 +13,18 @@ extern "C" {
 
 typedef struct tree_link {
     struct tree_link *child[2];
-    int level;
+    size_t level;
 } tree_link;
 
 typedef struct tree_node {
-    // Link must come first, becase we cast tree_link* <-> tree_node*.
+    // Link must come first, because we cast tree_link* <-> tree_node*.
     tree_link link;
 
     // Universal tree key
     skey_t key;
 
     // Inline value
-    alignas(void *) char value[];
+    alignas(long) char value[];
 } tree_node;
 
 typedef struct {
@@ -33,18 +33,19 @@ typedef struct {
 
     skey_compare_fn compare_keys;
 
-    // Num of nodes in the tree
+    // Number of nodes in the tree
     size_t size;
 
     // Node size in bytes with value
     size_t node_size;
 
-    memmgr *mm;
+    const memmgr *mm;
     void *mm_ctx;
 } tree_map;
 
 // Create a new instance of a map
-tree_map tree_map_new(skey_compare_fn compare_keys, memmgr *mm, void *mm_ctx, size_t value_size);
+tree_map tree_map_new(
+        skey_compare_fn compare_keys, const memmgr *mm, void *mm_ctx, size_t value_size);
 
 tree_map tree_map_clone(const tree_map *t);
 

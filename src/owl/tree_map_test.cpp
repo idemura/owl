@@ -802,8 +802,6 @@ static tree_node *build_tree(tree_map *t, const tree_node *node)
 
 TEST(tree_map, exhaustive_delete)
 {
-    const auto start_time = std::chrono::high_resolution_clock::now();
-
     std::vector<tree_node *> all_trees;
     long count = generate_trees(all_trees, 4);
     long first = all_trees.size() - count;
@@ -826,9 +824,4 @@ TEST(tree_map, exhaustive_delete)
     }
 
     release_trees(all_trees);
-
-    std::chrono::duration<double, std::micro> duration =
-            std::chrono::high_resolution_clock::now() - start_time;
-
-    std::cout << "Duration: " << duration.count() << " us\n";
 }

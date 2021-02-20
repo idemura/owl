@@ -26,7 +26,8 @@ inline static size_t hash_map_psl(uint64_t hash, size_t i, size_t capacity)
     return (i + capacity - (hash & (capacity - 1))) & (capacity - 1);
 }
 
-hash_map hash_map_new(skey_compare_fn compare_keys,
+hash_map hash_map_new(
+        skey_compare_fn compare_keys,
         skey_hash_fn hash_key,
         const memmgr *mm,
         void *mm_ctx,

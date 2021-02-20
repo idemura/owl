@@ -128,7 +128,8 @@ static tree_link *tree_map_put_rec(tree_map *t, rec_state *state, tree_link *nod
         return state->result;
     }
 
-    int d = t->compare_keys(state->key, &((tree_node *) node)->key);
+    long d = t->compare_keys(state->key, &((tree_node *) node)->key);
+    // long d = state->key->nk - ((tree_node *) node)->key.nk;
     if (d == 0) {
         state->result = node;
         return node;
@@ -166,7 +167,7 @@ void *tree_map_get(tree_map *t, skey_t key)
 {
     tree_node *node = t->root;
     while (node->link.level != 0) {
-        int d = t->compare_keys(&key, &node->key);
+        long d = t->compare_keys(&key, &node->key);
         if (d == 0) {
             return node->value;
         }
@@ -308,7 +309,7 @@ static tree_link *tree_map_del_rec(tree_map *t, rec_state *state, tree_link *nod
         return node;
     }
 
-    int d = t->compare_keys(state->key, &((tree_node *) node)->key);
+    long d = t->compare_keys(state->key, &((tree_node *) node)->key);
     int branch = d > 0;
     if (d == 0) {
         if (node->child[0]->level == 0) {

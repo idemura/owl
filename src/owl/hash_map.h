@@ -38,7 +38,8 @@ typedef struct {
     void *mm_ctx;
 } hash_map;
 
-hash_map hash_map_new(skey_compare_fn compare_keys,
+hash_map hash_map_new(
+        skey_compare_fn compare_keys,
         skey_hash_fn hash_key,
         const memmgr *mm,
         void *mm_ctx,

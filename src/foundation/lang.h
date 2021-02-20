@@ -15,6 +15,8 @@
 
 #define array_sizeof(a) (sizeof(a) / sizeof((a)[0]))
 
+#define ATTR_NO_INLINE __attribute__((noinline))
+
 bool str_starts_with(const char *s, const char *pattern);
 noreturn void die(const char *format, ...);
 

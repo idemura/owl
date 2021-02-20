@@ -68,7 +68,7 @@ void call_stack_dump(int fd, int sig)
 
         if (unw_get_proc_name(&cursor, buf, sizeof buf, &offset) == 0) {
             if (c_frame == 0
-                && (str_starts_with(buf, "_sig") || strcmp(buf, "sig_segv_handler") == 0)) {
+                    && (str_starts_with(buf, "_sig") || strcmp(buf, "sig_segv_handler") == 0)) {
                 continue;
             }
         } else {

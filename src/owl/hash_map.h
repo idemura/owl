@@ -12,6 +12,7 @@ extern "C" {
 #define HASH_MAP_MAX_ENTRY_SIZE 256
 #define HASH_MAP_MIN_CAPACITY 4
 #define HASH_MAP_ENTRY_OFFSET(a, ofs) ((hash_map_entry *) ((char *) (a) + (ofs)))
+#define HASH_MAP_ENTRY_DIFF(a, b) ((char *) (a) - (char *) (b))
 
 // Hash map implementation based on Robin Hood hashing.
 typedef struct {
@@ -37,8 +38,7 @@ typedef struct {
     void *mm_ctx;
 } hash_map;
 
-hash_map hash_map_new(
-        skey_compare_fn compare_keys,
+hash_map hash_map_new(skey_compare_fn compare_keys,
         skey_hash_fn hash_key,
         const memmgr *mm,
         void *mm_ctx,

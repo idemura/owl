@@ -41,7 +41,9 @@ class Package:
         self.path = os.path.join(src_dir, name)
         self.props = props
         self.is_test = os.path.isfile(os.path.join(self.path, MAIN_TEST))
-        self.is_main = os.path.isfile(os.path.join(self.path, MAIN))
+        self.is_main = (
+                os.path.isfile(os.path.join(self.path, "main.c")) or
+                os.path.isfile(os.path.join(self.path, "main.cpp")))
         self.deps = props.get('deps', [])
         self.transitive_deps = []
 

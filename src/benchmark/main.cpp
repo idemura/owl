@@ -11,14 +11,21 @@
 #include <unordered_map>
 #include <vector>
 
-static long skey_compare(const skey_t *a, const skey_t *b)
+struct key_value {
+    int k = 0;
+    int v = 0;
+
+    key_value(int k_, int v_): k{k_}, v{v_} {}
+};
+
+static long skey_compare(skey_t a, skey_t b)
 {
-    return a->nk - b->nk;
+    return *((const int *) a.ptr) - *((const int *) b.ptr);
 }
 
-static uint64_t skey_hash(const skey_t *a)
+static uint64_t skey_hash(skey_t a)
 {
-    return a->nk;
+    return *((const int *) a.ptr);
 }
 
 static long get_average(std::vector<long> &times)
@@ -48,8 +55,8 @@ static std::string name_duration(long us)
     return std::to_string(us) + " s";
 }
 
-constexpr size_t N = 250'000;
-constexpr size_t CYCLES = 20;
+constexpr int N = 250'000;
+constexpr int CYCLES = 20;
 
 void benchmark_tree_map()
 {
@@ -61,9 +68,9 @@ void benchmark_tree_map()
     for (int c = 0; c < CYCLES; c++) {
         const auto start_time = std::chrono::high_resolution_clock::now();
 
-        std::map<long, int> m;
+        std::map<int, int> m;
         std::minstd_rand rg;
-        for (size_t i = 0; i < N; i++) {
+        for (int i = 0; i < N; i++) {
             m[rg()] = i;
         }
 
@@ -75,15 +82,25 @@ void benchmark_tree_map()
     for (int c = 0; c < CYCLES; c++) {
         const auto start_time = std::chrono::high_resolution_clock::now();
 
-        tree_map m = tree_map_new(skey_compare, get_memmgr(), nullptr, sizeof(int));
+        tree_map m = tree_map_new_default(skey_compare, sizeof(key_value));
         std::minstd_rand rg;
-        for (size_t i = 0; i < N; i++) {
-            *(int*) tree_map_put(&m, skey_number(rg())) = i;
+        for (int i = 0; i < N; i++) {
+            tree_map_put_v(&m, key_value(rg(), i));
         }
 
         std::chrono::duration<double, std::micro> duration =
                 std::chrono::high_resolution_clock::now() - start_time;
         time_owl.push_back(duration.count());
+
+        if (c == 0) {
+            std::minstd_rand rg1;
+            for (int i = 0; i < N; i++) {
+                auto *kv = (key_value *) tree_map_get_v(&m, rg1());
+                if (i != kv->v) {
+                    die("Wrong value: %d vs %d", i, kv->v);
+                }
+            }
+        }
 
         tree_map_destroy(&m);
     }
@@ -102,9 +119,9 @@ void benchmark_hash_map()
     for (int c = 0; c < CYCLES; c++) {
         const auto start_time = std::chrono::high_resolution_clock::now();
 
-        std::unordered_map<long, int> m;
+        std::unordered_map<int, int> m;
         std::minstd_rand rg;
-        for (size_t i = 0; i < N; i++) {
+        for (int i = 0; i < N; i++) {
             m[rg()] = i;
         }
 
@@ -116,16 +133,25 @@ void benchmark_hash_map()
     for (int c = 0; c < CYCLES; c++) {
         const auto start_time = std::chrono::high_resolution_clock::now();
 
-        hash_map m = hash_map_new(
-            skey_compare, skey_hash, get_memmgr(), nullptr, sizeof(int), 0);
+        hash_map m = hash_map_new_default(skey_compare, skey_hash, sizeof(key_value));
         std::minstd_rand rg;
-        for (size_t i = 0; i < N; i++) {
-            *(int*) hash_map_put(&m, skey_number(rg())) = i;
+        for (int i = 0; i < N; i++) {
+            hash_map_put_v(&m, key_value(rg(), i));
         }
 
         std::chrono::duration<double, std::micro> duration =
                 std::chrono::high_resolution_clock::now() - start_time;
         time_owl.push_back(duration.count());
+
+        if (c == 0) {
+            std::minstd_rand rg1;
+            for (int i = 0; i < N; i++) {
+                auto *kv = (key_value *) hash_map_get_v(&m, rg1());
+                if (i != kv->v) {
+                    die("Wrong value: %d vs %d", i, kv->v);
+                }
+            }
+        }
 
         hash_map_destroy(&m);
     }
@@ -139,10 +165,10 @@ int main(int argc, char **argv)
     call_stack_init(argv[0]);
 
     benchmark_tree_map();
-    std::cout<<"\n";
+    std::cout << "\n";
 
     benchmark_hash_map();
-    std::cout<<"\n";
+    std::cout << "\n";
 
     return 0;
 }

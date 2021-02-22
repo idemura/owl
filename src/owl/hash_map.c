@@ -101,7 +101,6 @@ static void hash_map_swap(void *a, void *b, size_t entry_size)
     }
 }
 
-ATTR_NO_INLINE
 static void hash_map_reinsert(void *array, size_t capacity, size_t entry_size, hash_map_entry *e)
 {
     size_t p = e->hash & (capacity - 1);
@@ -143,41 +142,47 @@ static void hash_map_reinsert(void *array, size_t capacity, size_t entry_size, h
     }
 }
 
-inline static void hash_map_set_entry(
-        hash_map_entry *e, uint64_t hash, skey_t key, size_t entry_size)
+ATTR_NO_INLINE
+static void hash_map_double_capacity(hash_map *h)
 {
-    *e = (hash_map_entry){.hash = hash, .key = key};
-    memset(e->value, 0, entry_size - sizeof(hash_map_entry));
-}
-
-void *hash_map_put(hash_map *h, skey_t key)
-{
-    if (10 * (h->size + 1) > 9 * h->capacity) {
-        size_t double_cap = h->capacity * 2;
-        if (double_cap < HASH_MAP_MIN_CAPACITY) {
-            double_cap = HASH_MAP_MIN_CAPACITY;
-        }
-
-        hash_map_entry *array = hash_map_alloc(h, double_cap);
-        if (!array) {
-            die("hash_map: OOM (allocating %zu bytes)", h->entry_size * double_cap);
-        }
-
-        // Copy existing entries to the new array
-        hash_map_entry *iter = h->array;
-        for (size_t i = 0; i < h->capacity; i++) {
-            if (iter->hash != 0) {
-                hash_map_reinsert(array, double_cap, h->entry_size, iter);
-            }
-            iter = HASH_MAP_ENTRY_OFFSET(iter, h->entry_size);
-        }
-
-        h->mm->release(h->mm_ctx, h->array);
-        h->array = array;
-        h->capacity = double_cap;
+    size_t double_cap = h->capacity * 2;
+    if (double_cap < HASH_MAP_MIN_CAPACITY) {
+        double_cap = HASH_MAP_MIN_CAPACITY;
     }
 
-    uint64_t hash = h->hash_key(&key);
+    hash_map_entry *array = hash_map_alloc(h, double_cap);
+    if (!array) {
+        die("hash_map: OOM (allocating %zu bytes)", h->entry_size * double_cap);
+    }
+
+    // Copy existing entries to the new array
+    hash_map_entry *iter = h->array;
+    for (size_t i = 0; i < h->capacity; i++) {
+        if (iter->hash != 0) {
+            hash_map_reinsert(array, double_cap, h->entry_size, iter);
+        }
+        iter = HASH_MAP_ENTRY_OFFSET(iter, h->entry_size);
+    }
+
+    h->mm->release(h->mm_ctx, h->array);
+    h->array = array;
+    h->capacity = double_cap;
+}
+
+inline static void hash_map_set_entry(
+        hash_map_entry *e, uint64_t hash, skey_t key_value, size_t entry_size)
+{
+    *e = (hash_map_entry){.hash = hash};
+    memcpy(e->value, key_value.ptr, entry_size - sizeof(hash_map_entry));
+}
+
+void hash_map_put(hash_map *h, skey_t key_value)
+{
+    if (10 * (h->size + 1) > 9 * h->capacity) {
+        hash_map_double_capacity(h);
+    }
+
+    uint64_t hash = h->hash_key(key_value);
     if (hash == 0) {
         hash = HASH_0_REPLACE;
     }
@@ -187,9 +192,9 @@ void *hash_map_put(hash_map *h, skey_t key)
     // Fast path
     hash_map_entry *iter = HASH_MAP_ENTRY_OFFSET(h->array, h->entry_size * p);
     if (iter->hash == 0) {
-        hash_map_set_entry(iter, hash, key, h->entry_size);
+        hash_map_set_entry(iter, hash, key_value, h->entry_size);
         h->size++;
-        return iter->value;
+        return;
     }
 
     union {
@@ -197,7 +202,7 @@ void *hash_map_put(hash_map *h, skey_t key)
         char buf[HASH_MAP_MAX_ENTRY_SIZE];
     } u;
 
-    hash_map_set_entry(&u.e, hash, key, h->entry_size);
+    hash_map_set_entry(&u.e, hash, key_value, h->entry_size);
 
     void *result = NULL;
     size_t psl = 0;
@@ -206,11 +211,12 @@ void *hash_map_put(hash_map *h, skey_t key)
         if (iter->hash == 0) {
             memcpy(iter, &u.e, h->entry_size);
             h->size++;
-            return result ? result : iter->value;
+            return;
         }
 
-        if (iter->hash == hash && h->compare_keys(&iter->key, &u.e.key) == 0) {
-            return iter->value;
+        if (iter->hash == hash && h->compare_keys(SKEY_OF(iter->value), SKEY_OF(u.e.value)) == 0) {
+            memcpy(iter, &u.e, h->entry_size);
+            return;
         }
 
         size_t d = hash_map_psl(iter->hash, i, h->capacity);
@@ -232,11 +238,12 @@ void *hash_map_put(hash_map *h, skey_t key)
         if (iter->hash == 0) {
             memcpy(iter, &u.e, h->entry_size);
             h->size++;
-            return result ? result : iter->value;
+            return;
         }
 
-        if (iter->hash == hash && h->compare_keys(&iter->key, &u.e.key) == 0) {
-            return iter->value;
+        if (iter->hash == hash && h->compare_keys(SKEY_OF(iter->value), SKEY_OF(u.e.value)) == 0) {
+            memcpy(iter, &u.e, h->entry_size);
+            return;
         }
 
         size_t d = hash_map_psl(iter->hash, i, h->capacity);
@@ -251,14 +258,11 @@ void *hash_map_put(hash_map *h, skey_t key)
         psl++;
         iter = HASH_MAP_ENTRY_OFFSET(iter, h->entry_size);
     }
-
-    // Just in case
-    return NULL;
 }
 
 hash_map_entry *hash_map_find_entry(hash_map *h, skey_t key, size_t *entry_index)
 {
-    uint64_t hash = h->hash_key(&key);
+    uint64_t hash = h->hash_key(key);
     if (hash == 0) {
         hash = HASH_0_REPLACE;
     }
@@ -271,7 +275,7 @@ hash_map_entry *hash_map_find_entry(hash_map *h, skey_t key, size_t *entry_index
         if (iter->hash == 0) {
             return NULL;
         }
-        if (iter->hash == hash && h->compare_keys(&iter->key, &key) == 0) {
+        if (iter->hash == hash && h->compare_keys(SKEY_OF(iter->value), key) == 0) {
             *entry_index = i;
             return iter;
         }
@@ -288,7 +292,7 @@ hash_map_entry *hash_map_find_entry(hash_map *h, skey_t key, size_t *entry_index
         if (iter->hash == 0) {
             return NULL;
         }
-        if (iter->hash == hash && h->compare_keys(&iter->key, &key) == 0) {
+        if (iter->hash == hash && h->compare_keys(SKEY_OF(iter->value), key) == 0) {
             *entry_index = i;
             return iter;
         }
@@ -317,12 +321,12 @@ static void hash_map_move_entries(hash_map_entry *first, hash_map_entry *last, s
     memmove(first, HASH_MAP_ENTRY_OFFSET(first, entry_size), n_bytes);
 }
 
-bool hash_map_del(hash_map *h, skey_t key)
+void hash_map_del(hash_map *h, skey_t key)
 {
     size_t i = 0;
     hash_map_entry *found = hash_map_find_entry(h, key, &i);
     if (found == NULL) {
-        return false;
+        return;
     }
 
     // Starting with the next to found, look for empty slot or one with PSL == 0.
@@ -362,5 +366,4 @@ bool hash_map_del(hash_map *h, skey_t key)
     memset(HASH_MAP_ENTRY_OFFSET(h->array, h->entry_size * j_1), 0, h->entry_size);
 
     h->size--;
-    return true;
 }

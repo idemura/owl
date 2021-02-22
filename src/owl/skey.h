@@ -7,30 +7,16 @@
 extern "C" {
 #endif
 
-// Simple key for maps: natively supports long integers and strings.
-
+// Wraps pointer to a simple key (and values). We want a type distinct from just void* to see keys
+// in the code clearly.
 typedef struct {
-    long nk;
-    const char *sk;
+    const void *ptr;
 } skey_t;
 
-typedef long (*skey_compare_fn)(const skey_t *a, const skey_t *b);
-typedef uint64_t (*skey_hash_fn)(const skey_t *k);
+typedef long (*skey_compare_fn)(skey_t a, skey_t b);
+typedef uint64_t (*skey_hash_fn)(skey_t k);
 
-inline static skey_t skey_number(long n)
-{
-    return (skey_t){.nk = n};
-}
-
-inline static skey_t skey_strn(const char *s, size_t s_len)
-{
-    return (skey_t){.nk = (long) s_len, .sk = s};
-}
-
-inline static skey_t skey_strz(const char *s)
-{
-    return skey_strn(s, strlen(s));
-}
+#define SKEY_OF(p) ((skey_t){.ptr = (p)})
 
 #ifdef __cplusplus
 }

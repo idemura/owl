@@ -2,28 +2,14 @@
 
 #include <stdio.h>
 
-typedef struct {
-    const skey_t *key;
-    tree_link *result;
-} rec_state;
-
-static void tree_map_print_node(const tree_node *n)
-{
-    printf("node level=%zu ", n->link.level);
-    if (n->key.sk) {
-        printf("key=\"%s\" (len=%ld)", n->key.sk, n->key.nk);
-    } else {
-        printf("key=%ld", n->key.nk);
-    }
-    printf("\n");
-}
+#define SKEY_OF_NODE(n) SKEY_OF((n)->value)
 
 tree_map tree_map_new(
         skey_compare_fn compare_keys, const memmgr *mm, void *mm_ctx, size_t value_size)
 {
     tree_map t = {
             .compare_keys = compare_keys,
-            .node_size = sizeof(tree_node) + pad_size_l(value_size),
+            .value_size = pad_size_l(value_size),
             .mm = mm,
             .mm_ctx = mm_ctx,
     };
@@ -38,10 +24,13 @@ tree_link *tree_map_clone_rec(tree_map *c, const tree_map *t, const tree_link *n
     if (node == &t->empty) {
         return &c->empty;
     }
-    tree_node *n = c->mm->allocate_dirty(c->mm_ctx, c->node_size);
-    memcpy(n, node, c->node_size);
+
+    size_t n_bytes = sizeof(tree_node) + c->value_size;
+    tree_node *n = c->mm->allocate_dirty(c->mm_ctx, n_bytes);
+    memcpy(n, node, n_bytes);
     n->link.child[0] = tree_map_clone_rec(c, t, node->child[0]);
     n->link.child[1] = tree_map_clone_rec(c, t, node->child[1]);
+
     return (tree_link *) n;
 }
 
@@ -114,29 +103,27 @@ inline static tree_link *tree_map_rotate(tree_link *n, int b)
     return c;
 }
 
-static tree_link *tree_map_put_rec(tree_map *t, rec_state *state, tree_link *node)
+static tree_link *tree_map_put_rec(tree_map *t, skey_t key, tree_link *node)
 {
     if (node->level == 0) {
-        tree_node *n = t->mm->allocate_dirty(t->mm_ctx, t->node_size);
+        tree_node *n = t->mm->allocate_dirty(t->mm_ctx, sizeof(tree_node) + t->value_size);
         n->link.child[0] = &t->empty;
         n->link.child[1] = &t->empty;
         n->link.level = 1;
-        n->key = *state->key;
-        memset(n->value, 0, t->node_size - sizeof(tree_node));
+        memcpy(n->value, key.ptr, t->value_size);
         t->size++;
-        state->result = (tree_link *) n;
-        return state->result;
+        return (tree_link *) n;
     }
 
-    long d = t->compare_keys(state->key, &((tree_node *) node)->key);
-    // long d = state->key->nk - ((tree_node *) node)->key.nk;
+    long d = t->compare_keys(key, SKEY_OF_NODE((tree_node *) node));
     if (d == 0) {
-        state->result = node;
+        tree_node *n = (tree_node *) node;
+        memcpy(n->value, key.ptr, t->value_size);
         return node;
     }
 
     int branch = d > 0;
-    node->child[branch] = tree_map_put_rec(t, state, node->child[branch]);
+    node->child[branch] = tree_map_put_rec(t, key, node->child[branch]);
 
     int level_diff = node->level - node->child[branch]->level;
     if (level_diff) {
@@ -156,24 +143,29 @@ static tree_link *tree_map_put_rec(tree_map *t, rec_state *state, tree_link *nod
     return node;
 }
 
-void *tree_map_put(tree_map *t, skey_t key)
+void tree_map_put(tree_map *t, skey_t key_value)
 {
-    rec_state state = {.key = &key};
-    t->root = (tree_node *) tree_map_put_rec(t, &state, (tree_link *) t->root);
-    return ((tree_node *) state.result)->value;
+    t->root = (tree_node *) tree_map_put_rec(t, key_value, (tree_link *) t->root);
 }
 
-void *tree_map_get(tree_map *t, skey_t key)
+ATTR_NO_INLINE
+static tree_node *tree_map_find_node(tree_map *t, skey_t key)
 {
     tree_node *node = t->root;
     while (node->link.level != 0) {
-        long d = t->compare_keys(&key, &node->key);
+        long d = t->compare_keys(key, SKEY_OF_NODE(node));
         if (d == 0) {
-            return node->value;
+            return node;
         }
         node = (tree_node *) node->link.child[d > 0];
     }
     return NULL;
+}
+
+void *tree_map_get(tree_map *t, skey_t key)
+{
+    tree_node *node = tree_map_find_node(t, key);
+    return node ? node->value : NULL;
 }
 
 static tree_link *tree_map_left_max_key(tree_link *node)
@@ -303,48 +295,43 @@ static tree_link *tree_map_fix_node_delete(tree_link *node, int b)
     }
 }
 
-static tree_link *tree_map_del_rec(tree_map *t, rec_state *state, tree_link *node)
+static tree_link *tree_map_del_rec(tree_map *t, skey_t key, tree_link *node)
 {
     if (node->level == 0) {
         return node;
     }
 
-    long d = t->compare_keys(state->key, &((tree_node *) node)->key);
+    long d = t->compare_keys(key, SKEY_OF_NODE((tree_node *) node));
     int branch = d > 0;
     if (d == 0) {
         if (node->child[0]->level == 0) {
-            state->result = node;
             return node->child[1]; // Replacement of this node
         }
 
-        tree_node *left_max = (tree_node *) tree_map_left_max_key((tree_link *) node);
-        state->key = &left_max->key; // New key to delete
+        tree_link *left_max = tree_map_left_max_key((tree_link *) node);
+        skey_t new_key = SKEY_OF_NODE((tree_node *) left_max);
 
         // @branch correctly points to 0
-        node->child[0] = tree_map_del_rec(t, state, node->child[0]);
+        node->child[0] = tree_map_del_rec(t, new_key, node->child[0]);
 
-        // Removed node replaces this node. This node becomes removed.
-        tree_link *t = state->result;
-        *t = *node;
-        state->result = node;
-        node = t;
+        // Left max node replaces this one (which is deleted). Copy link.
+        *left_max = *node;
+        node = left_max;
     } else {
-        node->child[branch] = tree_map_del_rec(t, state, node->child[branch]);
+        node->child[branch] = tree_map_del_rec(t, key, node->child[branch]);
     }
 
     return tree_map_fix_node_delete(node, branch);
 }
 
-bool tree_map_del(tree_map *t, skey_t key)
+void tree_map_del(tree_map *t, skey_t key)
 {
-    rec_state state = {.key = &key};
-    t->root = (tree_node *) tree_map_del_rec(t, &state, (tree_link *) t->root);
-    if (!state.result) {
-        return false;
+    tree_node *node = tree_map_find_node(t, key);
+    if (node != NULL) {
+        t->root = (tree_node *) tree_map_del_rec(t, key, (tree_link *) t->root);
+        t->mm->release(t->mm_ctx, node);
+        t->size--;
     }
-    t->mm->release(t->mm_ctx, (tree_node *) state.result);
-    t->size--;
-    return true;
 }
 
 const tree_node *tree_map_path(tree_map *t, int path_len, const int *path)

@@ -18,9 +18,7 @@ extern "C" {
 typedef struct {
     uint64_t hash;
 
-    skey_t key;
-
-    alignas(long) char value[];
+    alignas(skey_t) unsigned char value[];
 } hash_map_entry;
 
 typedef struct {
@@ -46,6 +44,12 @@ hash_map hash_map_new(
         size_t value_size,
         size_t capacity);
 
+inline static hash_map hash_map_new_default(
+        skey_compare_fn compare_keys, skey_hash_fn hash_key, size_t value_size)
+{
+    return hash_map_new(compare_keys, hash_key, get_memmgr(), NULL, value_size, 0);
+}
+
 hash_map hash_map_clone(const hash_map *h);
 
 void hash_map_destroy(hash_map *h);
@@ -55,9 +59,30 @@ inline static size_t hash_map_size(const hash_map *h)
     return h->size;
 }
 
-void *hash_map_put(hash_map *h, skey_t key);
+void hash_map_put(hash_map *h, skey_t key_value);
+
+#define hash_map_put_v(h, key_value) \
+    ({ \
+        __typeof__(key_value) lvalue = (key_value); \
+        hash_map_put(h, SKEY_OF(&lvalue)); \
+    })
+
 void *hash_map_get(hash_map *h, skey_t key);
-bool hash_map_del(hash_map *h, skey_t key);
+
+#define hash_map_get_v(t, key) \
+    ({ \
+        __typeof__(key) lvalue = (key); \
+        hash_map_get(t, SKEY_OF(&lvalue)); \
+    })
+
+void hash_map_del(hash_map *h, skey_t key);
+
+#define hash_map_del_v(h, key) \
+    ({ \
+        __typeof__(key) lvalue = (key); \
+        hash_map_del(h, SKEY_OF(&lvalue)); \
+    })
+
 void hash_map_print(const hash_map *h);
 
 #ifdef __cplusplus

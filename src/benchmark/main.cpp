@@ -69,9 +69,16 @@ void benchmark_tree_map()
         const auto start_time = std::chrono::high_resolution_clock::now();
 
         std::map<int, int> m;
-        std::minstd_rand rg;
+        std::minstd_rand rg0;
         for (int i = 0; i < N; i++) {
-            m[rg()] = i;
+            m[rg0()] = i;
+        }
+        std::minstd_rand rg1;
+        for (int i = 0; i < N; i++) {
+            m.erase(rg1());
+        }
+        if (m.size() != 0) {
+            die("std map not empty");
         }
 
         std::chrono::duration<double, std::micro> duration =
@@ -83,24 +90,21 @@ void benchmark_tree_map()
         const auto start_time = std::chrono::high_resolution_clock::now();
 
         tree_map m = tree_map_new_default(skey_compare, sizeof(key_value));
-        std::minstd_rand rg;
+        std::minstd_rand rg0;
         for (int i = 0; i < N; i++) {
-            tree_map_put_v(&m, key_value(rg(), i));
+            tree_map_put_v(&m, key_value(rg0(), i));
+        }
+        std::minstd_rand rg1;
+        for (int i = 0; i < N; i++) {
+            tree_map_del_v(&m, key_value(rg1(), 0));
+        }
+        if (tree_map_size(&m) != 0) {
+            die("owl map not empty");
         }
 
         std::chrono::duration<double, std::micro> duration =
                 std::chrono::high_resolution_clock::now() - start_time;
         time_owl.push_back(duration.count());
-
-        if (c == 0) {
-            std::minstd_rand rg1;
-            for (int i = 0; i < N; i++) {
-                auto *kv = (key_value *) tree_map_get_v(&m, rg1());
-                if (i != kv->v) {
-                    die("Wrong value: %d vs %d", i, kv->v);
-                }
-            }
-        }
 
         tree_map_destroy(&m);
     }
@@ -134,9 +138,9 @@ void benchmark_hash_map()
         const auto start_time = std::chrono::high_resolution_clock::now();
 
         hash_map m = hash_map_new_default(skey_compare, skey_hash, sizeof(key_value));
-        std::minstd_rand rg;
+        std::minstd_rand rg0;
         for (int i = 0; i < N; i++) {
-            hash_map_put_v(&m, key_value(rg(), i));
+            hash_map_put_v(&m, key_value(rg0(), i));
         }
 
         std::chrono::duration<double, std::micro> duration =

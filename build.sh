@@ -3,9 +3,10 @@
 set -e
 
 if [ -z "$OPT" ] || [ "$OPT" -ne "0" ]; then
-  FILE=ninja_opt
+    echo "Debug build"
+    FILE=ninja_dbg
 else
-  FILE=ninja_opt
+    FILE=ninja_opt
 fi
 
 rm -f src/ninja_build && ./generate_ninja.py

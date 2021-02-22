@@ -11,6 +11,10 @@
 #include <stdnoreturn.h>
 #include <string.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define OWL_MAX_SIZE ((1L << 48) - 1)
 
 #define array_sizeof(a) (sizeof(a) / sizeof((a)[0]))
@@ -31,5 +35,9 @@ noreturn void die(const char *format, ...);
 // P - pointer
 // F32 - f32
 // F64 - f64
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

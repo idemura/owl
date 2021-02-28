@@ -342,3 +342,29 @@ const tree_node *tree_map_path(tree_map *t, int path_len, const int *path)
     }
     return (const tree_node *) p;
 }
+
+void *tree_map_min_key(tree_map *t)
+{
+    tree_node *node = t->root;
+    if (node->link.level == 0) {
+        return NULL;
+    }
+
+    while (node->link.child[0]->level != 0) {
+        node = (tree_node *) node->link.child[0];
+    }
+    return node->value;
+}
+
+void *tree_map_max_key(tree_map *t)
+{
+    tree_node *node = t->root;
+    if (node->link.level == 0) {
+        return NULL;
+    }
+
+    while (node->link.child[1]->level != 0) {
+        node = (tree_node *) node->link.child[1];
+    }
+    return node->value;
+}

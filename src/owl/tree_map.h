@@ -20,7 +20,7 @@ typedef struct tree_node {
     // Link must come first, because we cast tree_link* <-> tree_node*.
     tree_link link;
 
-    alignas(skey_t) unsigned char value[];
+    alignas(long) unsigned char value[];
 } tree_node;
 
 typedef struct {
@@ -88,6 +88,9 @@ const tree_node *tree_map_path(tree_map *t, int path_len, const int *path);
         const int path[] = {__VA_ARGS__}; \
         tree_map_path(t, array_sizeof(path), path); \
     })
+
+void *tree_map_min_key(tree_map *t);
+void *tree_map_max_key(tree_map *t);
 
 // Check AA tree properties. Returns node where property is violated.
 const tree_node *tree_map_check(const tree_map *t);

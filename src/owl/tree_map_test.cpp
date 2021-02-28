@@ -868,3 +868,31 @@ TEST(tree_map, exhaustive_delete)
 
     release_trees(all_trees);
 }
+
+TEST(tree_map, min_max_key)
+{
+    mm_test_ctx mm_ctx{};
+    tree_map t = tree_map_new(skey_compare, get_memmgr_for_test(), &mm_ctx, sizeof(key_value));
+
+    // clang-format off
+    node_proto protos[] = {
+            {500, 3, 250, 750},
+            {250, 2, 200, 300},
+            {200, 1},
+            {300, 1},
+            {750, 2, 700, 800},
+            {700, 1},
+            {800, 1},
+    };
+    // clang-format on
+    construct_tree_check(&t, protos, array_sizeof(protos));
+
+    auto min_key = tree_map_min_key(&t);
+    EXPECT_EQ(200, ((key_value *) min_key)->k);
+
+    auto max_key = tree_map_max_key(&t);
+    EXPECT_EQ(800, ((key_value *) max_key)->k);
+
+    tree_map_destroy(&t);
+    EXPECT_EQ(0, mm_ctx.n_allocs);
+}

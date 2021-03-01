@@ -17,3 +17,6 @@ src/ninja_build
 
 # Local build script with custom flags
 local_build.sh
+
+# Binaries:
+src/benchmark/benchmark

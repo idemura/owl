@@ -7,7 +7,7 @@
 #include <map>
 #include <string>
 
-#define GET_TREE_NODE_LEVEL(t, ...) tree_map_path_va(t, __VA_ARGS__)->link.level
+#define GET_TREE_NODE_LEVEL(t, ...) tree_map_path_va(t, __VA_ARGS__)->level
 #define GET_TREE_NODE_KEY(t, ...) *((const int *) tree_map_path_va(t, __VA_ARGS__)->value)
 
 struct key_value {
@@ -35,10 +35,10 @@ static std::string to_string(skey_t key)
 static void print_child(std::ostream &os, const tree_node *c, const char *name)
 {
     os << "child " << name << ": ";
-    if (c->link.level == 0) {
+    if (c->level == 0) {
         os << "null";
     } else {
-        os << "key=" << to_string(SKEY_OF(c->value)) << " level=" << c->link.level;
+        os << "key=" << to_string(SKEY_OF(c->value)) << " level=" << c->level;
     }
 }
 
@@ -47,19 +47,19 @@ static bool check_tree(const tree_map &t, std::ostream &os)
     const tree_node *e = tree_map_check(&t);
     if (e) {
         os << "AA property violated:\n";
-        os << "at node key=" << to_string(SKEY_OF(e->value)) << " level=" << e->link.level << "\n";
+        os << "at node key=" << to_string(SKEY_OF(e->value)) << " level=" << e->level << "\n";
 
         os << "  ";
-        print_child(os, (tree_node *) e->link.child[0], "0");
+        print_child(os, (tree_node *) e->child[0], "0");
         os << "\n";
 
         os << "  ";
-        print_child(os, (tree_node *) e->link.child[1], "1");
+        print_child(os, (tree_node *) e->child[1], "1");
         os << "\n";
 
-        if (e->link.child[1]->level != 0) {
+        if (e->child[1]->level != 0) {
             os << "  ";
-            print_child(os, (tree_node *) e->link.child[1]->child[1], "1-1");
+            print_child(os, (tree_node *) e->child[1]->child[1], "1-1");
             os << "\n";
         }
     }
@@ -76,21 +76,21 @@ static void print_tree_rec(const tree_map &t, std::ostream &os, const tree_node 
     for (int i = 0; i < indent; i++) {
         os << "    ";
     }
-    if ((const tree_link *) node == &t.empty) {
+    if ((const tree_node *) node == &t.empty) {
         os << "(null)\n";
         return;
     }
-    os << to_string(SKEY_OF(node->value)) << " level=" << node->link.level << "\n";
-    if (node->link.child[0] == &t.empty && node->link.child[1] == &t.empty) {
+    os << to_string(SKEY_OF(node->value)) << " level=" << node->level << "\n";
+    if (node->child[0] == &t.empty && node->child[1] == &t.empty) {
         return;
     }
-    print_tree_rec(t, os, (const tree_node *) node->link.child[0], indent + 1);
-    print_tree_rec(t, os, (const tree_node *) node->link.child[1], indent + 1);
+    print_tree_rec(t, os, (const tree_node *) node->child[0], indent + 1);
+    print_tree_rec(t, os, (const tree_node *) node->child[1], indent + 1);
 }
 
 static void print_tree(const tree_map &t, std::ostream &os)
 {
-    if ((const tree_link *) t.root == &t.empty) {
+    if ((const tree_node *) t.root == &t.empty) {
         os << "empty\n";
     } else {
         print_tree_rec(t, os, t.root, 0);
@@ -100,9 +100,9 @@ static void print_tree(const tree_map &t, std::ostream &os)
 static tree_node *new_node(tree_map *t, key_value kv, int level)
 {
     auto n = (tree_node *) t->mm->allocate_clear(t->mm_ctx, sizeof(tree_node) + sizeof(key_value));
-    n->link.level = level;
-    n->link.child[0] = &t->empty;
-    n->link.child[1] = &t->empty;
+    n->level = level;
+    n->child[0] = &t->empty;
+    n->child[1] = &t->empty;
     memcpy(n->value, &kv, sizeof(key_value));
     return n;
 }
@@ -126,10 +126,10 @@ static void construct_tree(tree_map *t, const node_proto *protos_p, size_t proto
     for (size_t i = 0; i < protos_n; i++) {
         auto *n = nodes[protos_p[i].key];
         if (protos_p[i].lkey > 0) {
-            n->link.child[0] = (tree_link *) nodes[protos_p[i].lkey];
+            n->child[0] = (tree_node *) nodes[protos_p[i].lkey];
         }
         if (protos_p[i].rkey) {
-            n->link.child[1] = (tree_link *) nodes[protos_p[i].rkey];
+            n->child[1] = (tree_node *) nodes[protos_p[i].rkey];
         }
     }
     t->root = nodes[protos_p[0].key];
@@ -774,9 +774,9 @@ static long generate_trees(std::vector<tree_node *> &result, int level)
 
     if (level == 1) {
         auto *n = (tree_node *) mm->allocate_clear(nullptr, sizeof(tree_node));
-        n->link.level = level;
-        n->link.child[0] = nullptr;
-        n->link.child[1] = nullptr;
+        n->level = level;
+        n->child[0] = nullptr;
+        n->child[1] = nullptr;
         result.push_back(n);
         return 1;
     }
@@ -789,10 +789,10 @@ static long generate_trees(std::vector<tree_node *> &result, int level)
 
     for (long i = prev_level_first; i < size; i++) {
         for (long j = prev_level_first; j < size; j++) {
-            tree_node *n = (tree_node *) mm->allocate_clear(nullptr, sizeof(tree_node));
-            n->link.level = level;
-            n->link.child[0] = (tree_link *) result[i];
-            n->link.child[1] = (tree_link *) result[j];
+            auto *n = (tree_node *) mm->allocate_clear(nullptr, sizeof(tree_node));
+            n->level = level;
+            n->child[0] = result[i];
+            n->child[1] = result[j];
             result.push_back(n);
         }
     }
@@ -800,14 +800,14 @@ static long generate_trees(std::vector<tree_node *> &result, int level)
     for (long i = prev_level_first; i < size; i++) {
         for (long j = prev_level_first; j < size; j++) {
             for (long k = prev_level_first; k < size; k++) {
-                tree_node *n = (tree_node *) mm->allocate_clear(nullptr, sizeof(tree_node));
-                tree_node *m = (tree_node *) mm->allocate_clear(nullptr, sizeof(tree_node));
-                n->link.level = level;
-                m->link.level = level;
-                n->link.child[0] = (tree_link *) result[i];
-                n->link.child[1] = (tree_link *) m;
-                m->link.child[0] = (tree_link *) result[j];
-                m->link.child[1] = (tree_link *) result[k];
+                auto *n = (tree_node *) mm->allocate_clear(nullptr, sizeof(tree_node));
+                auto *m = (tree_node *) mm->allocate_clear(nullptr, sizeof(tree_node));
+                n->level = level;
+                m->level = level;
+                n->child[0] = result[i];
+                n->child[1] = m;
+                m->child[0] = result[j];
+                m->child[1] = result[k];
                 result.push_back(n);
             }
         }
@@ -834,9 +834,9 @@ static tree_node *build_tree(tree_map *t, const tree_node *node)
     size_t n_bytes = sizeof(tree_node) + sizeof(key_value);
     auto *n = (tree_node *) t->mm->allocate_dirty(t->mm_ctx, n_bytes);
     memcpy(n, node, n_bytes);
-    n->link.child[0] = (tree_link *) build_tree(t, (tree_node *) node->link.child[0]);
+    n->child[0] = (tree_node *) build_tree(t, (tree_node *) node->child[0]);
     *((key_value *) n->value) = key_value(t->size++, 0);
-    n->link.child[1] = (tree_link *) build_tree(t, (tree_node *) node->link.child[1]);
+    n->child[1] = (tree_node *) build_tree(t, (tree_node *) node->child[1]);
 
     return n;
 }

@@ -15,11 +15,11 @@ tree_map tree_map_new(
     };
     t.empty.child[0] = &t.empty;
     t.empty.child[1] = &t.empty;
-    t.root = (tree_node *) &t.empty;
+    t.root = &t.empty;
     return t;
 }
 
-tree_link *tree_map_clone_rec(tree_map *c, const tree_map *t, const tree_link *node)
+tree_node *tree_map_clone_rec(tree_map *c, const tree_map *t, const tree_node *node)
 {
     if (node == &t->empty) {
         return &c->empty;
@@ -28,26 +28,26 @@ tree_link *tree_map_clone_rec(tree_map *c, const tree_map *t, const tree_link *n
     size_t n_bytes = sizeof(tree_node) + c->value_size;
     tree_node *n = c->mm->allocate_dirty(c->mm_ctx, n_bytes);
     memcpy(n, node, n_bytes);
-    n->link.child[0] = tree_map_clone_rec(c, t, node->child[0]);
-    n->link.child[1] = tree_map_clone_rec(c, t, node->child[1]);
+    n->child[0] = tree_map_clone_rec(c, t, node->child[0]);
+    n->child[1] = tree_map_clone_rec(c, t, node->child[1]);
 
-    return (tree_link *) n;
+    return n;
 }
 
 tree_map tree_map_clone(const tree_map *t)
 {
     tree_map c = *t;
-    c.root = (tree_node *) tree_map_clone_rec(&c, t, (tree_link *) t->root);
+    c.root = tree_map_clone_rec(&c, t, t->root);
     return c;
 }
 
-static const tree_link *tree_map_check_rec(const tree_link *node)
+static const tree_node *tree_map_check_rec(const tree_node *node)
 {
     if (node->level == 0) {
         return NULL;
     }
 
-    const tree_link *t;
+    const tree_node *t;
 
     if ((t = tree_map_check_rec(node->child[0]))) {
         return t;
@@ -76,48 +76,48 @@ static const tree_link *tree_map_check_rec(const tree_link *node)
 
 const tree_node *tree_map_check(const tree_map *t)
 {
-    return (tree_node *) tree_map_check_rec((tree_link *) t->root);
+    return tree_map_check_rec(t->root);
 }
 
-static void tree_map_destroy_rec(const memmgr *mm, void *mm_ctx, tree_link *node)
+static void tree_map_destroy_rec(const memmgr *mm, void *mm_ctx, tree_node *node)
 {
     if (node->level != 0) {
         tree_map_destroy_rec(mm, mm_ctx, node->child[0]);
         tree_map_destroy_rec(mm, mm_ctx, node->child[1]);
-        mm->release(mm_ctx, (tree_node *) node);
+        mm->release(mm_ctx, node);
     }
 }
 
 void tree_map_destroy(tree_map *t)
 {
-    tree_map_destroy_rec(t->mm, t->mm_ctx, (tree_link *) t->root);
+    tree_map_destroy_rec(t->mm, t->mm_ctx, t->root);
     *t = (tree_map){0};
 }
 
 // Rotate. Moves child @b up and makes node @n its `(1 - b)` child.
-inline static tree_link *tree_map_rotate(tree_link *n, int b)
+inline static tree_node *tree_map_rotate(tree_node *n, int b)
 {
-    tree_link *c = n->child[b];
+    tree_node *c = n->child[b];
     n->child[b] = c->child[1 - b];
     c->child[1 - b] = n;
     return c;
 }
 
-static tree_link *tree_map_put_rec(tree_map *t, skey_t key, tree_link *node)
+static tree_node *tree_map_put_rec(tree_map *t, skey_t key, tree_node *node)
 {
     if (node->level == 0) {
         tree_node *n = t->mm->allocate_dirty(t->mm_ctx, sizeof(tree_node) + t->value_size);
-        n->link.child[0] = &t->empty;
-        n->link.child[1] = &t->empty;
-        n->link.level = 1;
+        n->child[0] = &t->empty;
+        n->child[1] = &t->empty;
+        n->level = 1;
         memcpy(n->value, key.ptr, t->value_size);
         t->size++;
-        return (tree_link *) n;
+        return n;
     }
 
-    long d = t->compare_keys(key, SKEY_OF_NODE((tree_node *) node));
+    long d = t->compare_keys(key, SKEY_OF_NODE(node));
     if (d == 0) {
-        tree_node *n = (tree_node *) node;
+        tree_node *n = node;
         memcpy(n->value, key.ptr, t->value_size);
         return node;
     }
@@ -145,19 +145,19 @@ static tree_link *tree_map_put_rec(tree_map *t, skey_t key, tree_link *node)
 
 void tree_map_put(tree_map *t, skey_t key_value)
 {
-    t->root = (tree_node *) tree_map_put_rec(t, key_value, (tree_link *) t->root);
+    t->root = tree_map_put_rec(t, key_value, t->root);
 }
 
 ATTR_NO_INLINE
 static tree_node *tree_map_find_node(tree_map *t, skey_t key)
 {
     tree_node *node = t->root;
-    while (node->link.level != 0) {
+    while (node->level != 0) {
         long d = t->compare_keys(key, SKEY_OF_NODE(node));
         if (d == 0) {
             return node;
         }
-        node = (tree_node *) node->link.child[d > 0];
+        node = node->child[d > 0];
     }
     return NULL;
 }
@@ -168,16 +168,16 @@ void *tree_map_get(tree_map *t, skey_t key)
     return node ? node->value : NULL;
 }
 
-static tree_link *tree_map_left_max_key(tree_link *node)
+static tree_node *tree_map_left_max_key(tree_node *node)
 {
-    tree_link *r = node->child[0];
+    tree_node *r = node->child[0];
     while (r->child[1]->level != 0) {
         r = r->child[1];
     }
     return r;
 }
 
-static tree_link *tree_map_fix_node_delete(tree_link *node, int b)
+static tree_node *tree_map_fix_node_delete(tree_node *node, int b)
 {
     // The only change that can happen is that child's level is decreased by 1. If level becomes
     // too low, we need to decrement it and fix AA properties.
@@ -188,7 +188,7 @@ static tree_link *tree_map_fix_node_delete(tree_link *node, int b)
     node->level--;
 
     // Restore AA properties at this node.
-    tree_link *x = node, *y = node->child[1 - b];
+    tree_node *x = node;
     if (b == 0) {
         // Three cases are possible.
         //
@@ -209,7 +209,6 @@ static tree_link *tree_map_fix_node_delete(tree_link *node, int b)
         //   D(-2)     E(-1)
         //
         // Case 3:
-        // -------
         //
         //  _A(-1)_
         // /       \
@@ -218,6 +217,7 @@ static tree_link *tree_map_fix_node_delete(tree_link *node, int b)
         //   D(-2)     E(-2)
         //
 
+        tree_node *y = node->child[1];
         if (x->level == y->level) {
             // Case 2 and 3
             if (y->child[1]->level == y->level) {
@@ -254,7 +254,6 @@ static tree_link *tree_map_fix_node_delete(tree_link *node, int b)
         // Pictures before level decrement.
         //
         // Case 1:
-        // -------
         //
         //       _A(-1)_
         //      /       \
@@ -263,7 +262,6 @@ static tree_link *tree_map_fix_node_delete(tree_link *node, int b)
         //        D(-1)
         //
         // Case 2:
-        // -------
         //
         //       _A(-1)_
         //      /       \
@@ -276,9 +274,9 @@ static tree_link *tree_map_fix_node_delete(tree_link *node, int b)
         // Always fix left child. Case 2 is fixed after this.
         x = tree_map_rotate(x, 0);
 
-        if (x->child[1]->child[0]->level == x->child[1]->level) {
+        tree_node *y = x->child[1];
+        if (y->child[0]->level == y->level) {
             // Case 1:
-            // -------
             //
             //  _B(-1)_
             // /       \
@@ -295,26 +293,26 @@ static tree_link *tree_map_fix_node_delete(tree_link *node, int b)
     }
 }
 
-static tree_link *tree_map_del_rec(tree_map *t, skey_t key, tree_link *node)
+static tree_node *tree_map_del_rec(tree_map *t, skey_t key, tree_node *node)
 {
     if (node->level == 0) {
         return node;
     }
 
-    long d = t->compare_keys(key, SKEY_OF_NODE((tree_node *) node));
+    long d = t->compare_keys(key, SKEY_OF_NODE(node));
     int branch = d > 0;
     if (d == 0) {
         if (node->child[0]->level == 0) {
             return node->child[1]; // Replacement of this node
         }
 
-        tree_link *left_max = tree_map_left_max_key((tree_link *) node);
-        skey_t new_key = SKEY_OF_NODE((tree_node *) left_max);
+        tree_node *left_max = tree_map_left_max_key(node);
+        skey_t new_key = SKEY_OF_NODE(left_max);
 
         // @branch correctly points to 0
         node->child[0] = tree_map_del_rec(t, new_key, node->child[0]);
 
-        // Left max node replaces this one (which is deleted). Copy link.
+        // Left max node replaces this one (which is deleted). Copy
         *left_max = *node;
         node = left_max;
     } else {
@@ -328,7 +326,7 @@ void tree_map_del(tree_map *t, skey_t key)
 {
     tree_node *node = tree_map_find_node(t, key);
     if (node != NULL) {
-        t->root = (tree_node *) tree_map_del_rec(t, key, (tree_link *) t->root);
+        t->root = tree_map_del_rec(t, key, t->root);
         t->mm->release(t->mm_ctx, node);
         t->size--;
     }
@@ -336,7 +334,7 @@ void tree_map_del(tree_map *t, skey_t key)
 
 const tree_node *tree_map_path(tree_map *t, int path_len, const int *path)
 {
-    const tree_link *p = (tree_link *) t->root;
+    const tree_node *p = t->root;
     for (int i = 0; i < path_len; i++) {
         p = p->child[path[i]];
     }
@@ -346,12 +344,12 @@ const tree_node *tree_map_path(tree_map *t, int path_len, const int *path)
 void *tree_map_min_key(tree_map *t)
 {
     tree_node *node = t->root;
-    if (node->link.level == 0) {
+    if (node->level == 0) {
         return NULL;
     }
 
-    while (node->link.child[0]->level != 0) {
-        node = (tree_node *) node->link.child[0];
+    while (node->child[0]->level != 0) {
+        node = node->child[0];
     }
     return node->value;
 }
@@ -359,12 +357,12 @@ void *tree_map_min_key(tree_map *t)
 void *tree_map_max_key(tree_map *t)
 {
     tree_node *node = t->root;
-    if (node->link.level == 0) {
+    if (node->level == 0) {
         return NULL;
     }
 
-    while (node->link.child[1]->level != 0) {
-        node = (tree_node *) node->link.child[1];
+    while (node->child[1]->level != 0) {
+        node = node->child[1];
     }
     return node->value;
 }

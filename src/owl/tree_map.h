@@ -11,32 +11,30 @@ extern "C" {
 
 // Tree map implementation based on AA tree map.
 
-typedef struct tree_link {
-    struct tree_link *child[2];
-    size_t level;
-} tree_link;
-
 typedef struct tree_node {
-    // Link must come first, because we cast tree_link* <-> tree_node*.
-    tree_link link;
+    struct tree_node *child[2];
+
+    // AA tree node level (0 for spcial "empty" node).
+    size_t level;
 
     alignas(long) unsigned char value[];
 } tree_node;
 
 typedef struct {
     tree_node *root;
-    tree_link empty;
 
     skey_compare_fn compare_keys;
-
-    // Number of nodes in the tree
-    size_t size;
 
     // Value size in bytes with value
     size_t value_size;
 
+    // Number of nodes in the tree
+    size_t size;
+
     const memmgr *mm;
     void *mm_ctx;
+
+    tree_node empty;
 } tree_map;
 
 // Create a new instance of a map

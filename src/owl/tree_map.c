@@ -366,3 +366,64 @@ void *tree_map_max_key(tree_map *t)
     }
     return node->value;
 }
+
+void tree_map_iter_begin(tree_map *t, tree_map_iter *iter)
+{
+    iter->top = 0;
+    iter->empty = &t->empty;
+
+    tree_node *n = t->root;
+    if (n->level == 0) {
+        return;
+    }
+
+    // Our stack contains only child[0] of the path.
+    while (n != iter->empty) {
+        iter->stack[iter->top] = n;
+        iter->top++;
+        n = n->child[0];
+    }
+}
+
+void tree_map_iter_begin_at(tree_map *t, tree_map_iter *iter, skey_t key)
+{
+    iter->top = 0;
+    iter->empty = &t->empty;
+
+    tree_node *n = t->root;
+    while (n->level != 0) {
+        long d = t->compare_keys(key, SKEY_OF_NODE(n));
+        if (d <= 0) {
+            iter->stack[iter->top] = n;
+            iter->top++;
+            if (d == 0) {
+                return;
+            }
+            n = n->child[0];
+        } else {
+            // If we want to start to the right of this node, it whole subtree is not eligible.
+            n = n->child[1];
+        }
+    }
+}
+
+void *tree_map_iter_next(tree_map_iter *iter)
+{
+    if (iter->top == 0) {
+        return NULL;
+    }
+
+    iter->top--;
+    tree_node *top = iter->stack[iter->top];
+
+    if (top->child[1] != iter->empty) {
+        tree_node *n = top->child[1];
+        do {
+            iter->stack[iter->top] = n;
+            iter->top++;
+            n = n->child[0];
+        } while (n != iter->empty);
+    }
+
+    return top->value;
+}

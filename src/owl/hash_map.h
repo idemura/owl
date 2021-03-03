@@ -14,11 +14,14 @@ extern "C" {
 #define HASH_MAP_ENTRY_OFFSET(a, ofs) ((hash_map_entry *) ((char *) (a) + (ofs)))
 #define HASH_MAP_ENTRY_DIFF(a, b) ((char *) (a) - (char *) (b))
 
-// Hash map implementation based on Robin Hood hashing.
+/**
+ * Hash map implementation based on Robin Hood hashing.
+ */
+
 typedef struct {
     uint64_t hash;
 
-    alignas(skey_t) unsigned char value[];
+    alignas(long) unsigned char value[];
 } hash_map_entry;
 
 typedef struct {

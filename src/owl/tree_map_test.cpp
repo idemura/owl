@@ -896,3 +896,111 @@ TEST(tree_map, min_max_key)
     tree_map_destroy(&t);
     EXPECT_EQ(0, mm_ctx.n_allocs);
 }
+
+TEST(tree_map, iterator_empty)
+{
+    mm_test_ctx mm_ctx{};
+    tree_map t = tree_map_new(skey_compare, get_memmgr_for_test(), &mm_ctx, sizeof(key_value));
+
+    tree_map_iter iter;
+    tree_map_iter_begin(&t, &iter);
+    EXPECT_EQ(nullptr, tree_map_iter_next(&iter));
+}
+
+TEST(tree_map, iterator)
+{
+    mm_test_ctx mm_ctx{};
+    tree_map t = tree_map_new(skey_compare, get_memmgr_for_test(), &mm_ctx, sizeof(key_value));
+
+    // clang-format off
+    node_proto protos[] = {
+            {500, 3, 250, 750},
+            {250, 2, 200, 300},
+            {200, 1, N_A, 210},
+            {210, 1},
+            {300, 1},
+            {750, 2, 700, 800},
+            {700, 1},
+            {800, 1},
+    };
+    // clang-format on
+    construct_tree_check(&t, protos, array_sizeof(protos));
+
+    long keys[array_sizeof(protos)] = {};
+    size_t i = 0;
+
+    tree_map_iter iter;
+    tree_map_iter_begin(&t, &iter);
+    for (void *v = tree_map_iter_next(&iter); v != nullptr; v = tree_map_iter_next(&iter)) {
+        keys[i++] = ((key_value *) v)->k;
+    }
+
+    EXPECT_EQ(8, i);
+    EXPECT_EQ(200, keys[0]);
+    EXPECT_EQ(210, keys[1]);
+    EXPECT_EQ(250, keys[2]);
+    EXPECT_EQ(300, keys[3]);
+    EXPECT_EQ(500, keys[4]);
+    EXPECT_EQ(700, keys[5]);
+    EXPECT_EQ(750, keys[6]);
+    EXPECT_EQ(800, keys[7]);
+}
+
+TEST(tree_map, iterator_at)
+{
+    mm_test_ctx mm_ctx{};
+    tree_map t = tree_map_new(skey_compare, get_memmgr_for_test(), &mm_ctx, sizeof(key_value));
+
+    // clang-format off
+    node_proto protos[] = {
+            {500, 3, 250, 750},
+            {250, 2, 200, 300},
+            {200, 1, N_A, 210},
+            {210, 1},
+            {300, 1},
+            {750, 2, 700, 800},
+            {700, 1},
+            {800, 1},
+    };
+    // clang-format on
+    construct_tree_check(&t, protos, array_sizeof(protos));
+
+    long keys[array_sizeof(protos)] = {};
+    size_t i = 0;
+
+    tree_map_iter iter;
+    tree_map_iter_begin_at_v(&t, &iter, 250);
+    for (void *v = tree_map_iter_next(&iter); v != nullptr; v = tree_map_iter_next(&iter)) {
+        keys[i++] = ((key_value *) v)->k;
+    }
+
+    EXPECT_EQ(6, i);
+    EXPECT_EQ(250, keys[0]);
+    EXPECT_EQ(300, keys[1]);
+    EXPECT_EQ(500, keys[2]);
+    EXPECT_EQ(700, keys[3]);
+    EXPECT_EQ(750, keys[4]);
+    EXPECT_EQ(800, keys[5]);
+
+    i = 0;
+    tree_map_iter_begin_at_v(&t, &iter, 500);
+    for (void *v = tree_map_iter_next(&iter); v != nullptr; v = tree_map_iter_next(&iter)) {
+        keys[i++] = ((key_value *) v)->k;
+    }
+
+    EXPECT_EQ(4, i);
+    EXPECT_EQ(500, keys[0]);
+    EXPECT_EQ(700, keys[1]);
+    EXPECT_EQ(750, keys[2]);
+    EXPECT_EQ(800, keys[3]);
+
+    i = 0;
+    tree_map_iter_begin_at_v(&t, &iter, 720);
+    for (void *v = tree_map_iter_next(&iter); v != nullptr; v = tree_map_iter_next(&iter)) {
+        keys[i++] = ((key_value *) v)->k;
+    }
+
+    EXPECT_EQ(2, i);
+    EXPECT_EQ(750, keys[0]);
+    EXPECT_EQ(800, keys[1]);
+}

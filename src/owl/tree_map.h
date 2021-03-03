@@ -9,7 +9,9 @@
 extern "C" {
 #endif
 
-// Tree map implementation based on AA tree map.
+/**
+ * Tree map implementation based on AA tree map.
+ */
 
 typedef struct tree_node {
     struct tree_node *child[2];
@@ -47,6 +49,9 @@ inline static tree_map tree_map_new_default(skey_compare_fn compare_keys, size_t
 }
 
 tree_map tree_map_clone(const tree_map *t);
+
+// Check AA tree properties. Returns node where property is violated.
+const tree_node *tree_map_check(const tree_map *t);
 
 void tree_map_destroy(tree_map *t);
 
@@ -90,8 +95,39 @@ const tree_node *tree_map_path(tree_map *t, int path_len, const int *path);
 void *tree_map_min_key(tree_map *t);
 void *tree_map_max_key(tree_map *t);
 
-// Check AA tree properties. Returns node where property is violated.
-const tree_node *tree_map_check(const tree_map *t);
+typedef struct {
+    size_t top;
+
+    tree_node *empty;
+
+    // We need to keep track of left branch. Because left child's level if one less than parent,
+    // given max size is OWL_MAX_SIZE = 2**48 - 1, we only need to have stack of size:
+    //   log_2(OWL_MAX_SIZE + 1) = 48.
+    //
+    // Node on the stack means that node's right subtree and the node itself is not visited.
+    tree_node *stack[48];
+} tree_map_iter;
+
+/**
+ * Init iterator.
+ */
+void tree_map_iter_begin(tree_map *t, tree_map_iter *iter);
+
+/**
+ * Init iterator at a certain key (or greater).
+ */
+void tree_map_iter_begin_at(tree_map *t, tree_map_iter *iter, skey_t key);
+
+#define tree_map_iter_begin_at_v(t, iter, key) \
+    ({ \
+        __typeof__(key) lvalue = (key); \
+        tree_map_iter_begin_at(t, iter, SKEY_OF(&lvalue)); \
+    })
+
+/**
+ * Get next, or null if itreation complete.
+ */
+void *tree_map_iter_next(tree_map_iter *iter);
 
 #ifdef __cplusplus
 }

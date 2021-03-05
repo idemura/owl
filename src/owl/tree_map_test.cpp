@@ -903,8 +903,7 @@ TEST(tree_map, iterator_empty)
     tree_map t = tree_map_new(skey_compare, get_memmgr_for_test(), &mm_ctx, sizeof(key_value));
 
     tree_map_iter iter;
-    tree_map_iter_begin(&t, &iter);
-    EXPECT_EQ(nullptr, tree_map_iter_next(&iter));
+    EXPECT_EQ(nullptr, tree_map_iter_begin(&t, &iter));
 }
 
 TEST(tree_map, iterator)
@@ -930,8 +929,7 @@ TEST(tree_map, iterator)
     size_t i = 0;
 
     tree_map_iter iter;
-    tree_map_iter_begin(&t, &iter);
-    for (void *v = tree_map_iter_next(&iter); v != nullptr; v = tree_map_iter_next(&iter)) {
+    for (void *v = tree_map_iter_begin(&t, &iter); v != nullptr; v = tree_map_iter_next(&iter)) {
         keys[i++] = ((key_value *) v)->k;
     }
 
@@ -969,8 +967,9 @@ TEST(tree_map, iterator_at)
     size_t i = 0;
 
     tree_map_iter iter;
-    tree_map_iter_begin_at_v(&t, &iter, 250);
-    for (void *v = tree_map_iter_next(&iter); v != nullptr; v = tree_map_iter_next(&iter)) {
+    for (void *v = tree_map_iter_begin_at_v(&t, &iter, 250);
+            v != nullptr;
+            v = tree_map_iter_next(&iter)) {
         keys[i++] = ((key_value *) v)->k;
     }
 
@@ -983,8 +982,9 @@ TEST(tree_map, iterator_at)
     EXPECT_EQ(800, keys[5]);
 
     i = 0;
-    tree_map_iter_begin_at_v(&t, &iter, 500);
-    for (void *v = tree_map_iter_next(&iter); v != nullptr; v = tree_map_iter_next(&iter)) {
+    for (void *v = tree_map_iter_begin_at_v(&t, &iter, 500);
+            v != nullptr;
+            v = tree_map_iter_next(&iter)) {
         keys[i++] = ((key_value *) v)->k;
     }
 
@@ -995,8 +995,9 @@ TEST(tree_map, iterator_at)
     EXPECT_EQ(800, keys[3]);
 
     i = 0;
-    tree_map_iter_begin_at_v(&t, &iter, 720);
-    for (void *v = tree_map_iter_next(&iter); v != nullptr; v = tree_map_iter_next(&iter)) {
+    for (void *v = tree_map_iter_begin_at_v(&t, &iter, 720);
+            v != nullptr;
+            v = tree_map_iter_next(&iter)) {
         keys[i++] = ((key_value *) v)->k;
     }
 

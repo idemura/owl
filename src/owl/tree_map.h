@@ -111,12 +111,12 @@ typedef struct {
 /**
  * Init iterator.
  */
-void tree_map_iter_begin(tree_map *t, tree_map_iter *iter);
+void *tree_map_iter_begin(tree_map *t, tree_map_iter *iter);
 
 /**
  * Init iterator at a certain key (or greater).
  */
-void tree_map_iter_begin_at(tree_map *t, tree_map_iter *iter, skey_t key);
+void *tree_map_iter_begin_at(tree_map *t, tree_map_iter *iter, skey_t key);
 
 #define tree_map_iter_begin_at_v(t, iter, key) \
     ({ \

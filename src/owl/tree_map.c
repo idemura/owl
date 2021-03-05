@@ -367,25 +367,23 @@ void *tree_map_max_key(tree_map *t)
     return node->value;
 }
 
-void tree_map_iter_begin(tree_map *t, tree_map_iter *iter)
+void *tree_map_iter_begin(tree_map *t, tree_map_iter *iter)
 {
     iter->top = 0;
     iter->empty = &t->empty;
 
-    tree_node *n = t->root;
-    if (n->level == 0) {
-        return;
-    }
-
     // Our stack contains only child[0] of the path.
+    tree_node *n = t->root;
     while (n != iter->empty) {
         iter->stack[iter->top] = n;
         iter->top++;
         n = n->child[0];
     }
+
+    return tree_map_iter_next(iter);
 }
 
-void tree_map_iter_begin_at(tree_map *t, tree_map_iter *iter, skey_t key)
+void *tree_map_iter_begin_at(tree_map *t, tree_map_iter *iter, skey_t key)
 {
     iter->top = 0;
     iter->empty = &t->empty;
@@ -397,7 +395,7 @@ void tree_map_iter_begin_at(tree_map *t, tree_map_iter *iter, skey_t key)
             iter->stack[iter->top] = n;
             iter->top++;
             if (d == 0) {
-                return;
+                break;
             }
             n = n->child[0];
         } else {
@@ -405,6 +403,8 @@ void tree_map_iter_begin_at(tree_map *t, tree_map_iter *iter, skey_t key)
             n = n->child[1];
         }
     }
+
+    return tree_map_iter_next(iter);
 }
 
 void *tree_map_iter_next(tree_map_iter *iter)
@@ -416,6 +416,7 @@ void *tree_map_iter_next(tree_map_iter *iter)
     iter->top--;
     tree_node *top = iter->stack[iter->top];
 
+    // Next is the leftmost child of the right subtree or next up the stack.
     if (top->child[1] != iter->empty) {
         tree_node *n = top->child[1];
         do {

@@ -1,5 +1,5 @@
-#ifndef OWL_SKEY_H
-#define OWL_SKEY_H
+#ifndef FOUNDATION_SKEY_H
+#define FOUNDATION_SKEY_H
 
 #include "foundation/lang.h"
 

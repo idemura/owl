@@ -20,3 +20,4 @@ local_build.sh
 
 # Binaries:
 src/benchmark/benchmark
+src/owl/owl

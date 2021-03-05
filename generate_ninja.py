@@ -126,13 +126,16 @@ def dfs_resolve(packages, discovered, visited, p, depth):
 
     if p.name in visited:
         if debug:
-            print("{}< {} (visited)".format(tab(depth), p.name))
-        return
+            print("{}< {} (visited): {}".format(tab(depth), p.name, p.transitive_deps))
+        return p.transitive_deps + [p.name]
 
     if p.name in discovered:
         raise DepCycleError(p.name)
 
     discovered[p.name] = True
+
+    if debug:
+        print("{}deps: {}".format(tab(depth), p.deps))
 
     trans = []
     for d in p.deps:

@@ -1,5 +1,5 @@
-#ifndef OWL_MEMMGR_H
-#define OWL_MEMMGR_H
+#ifndef FOUNDATION_MEMMGR_H
+#define FOUNDATION_MEMMGR_H
 
 #include "foundation/lang.h"
 

@@ -1,9 +1,9 @@
-#ifndef OWL_HASH_MAP_H
-#define OWL_HASH_MAP_H
+#ifndef FOUNDATION_HASH_MAP_H
+#define FOUNDATION_HASH_MAP_H
 
 #include "foundation/lang.h"
-#include "owl/memmgr.h"
-#include "owl/skey.h"
+#include "foundation/memmgr.h"
+#include "foundation/skey.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -87,6 +87,20 @@ void hash_map_del(hash_map *h, skey_t key);
     })
 
 void hash_map_print(const hash_map *h);
+
+typedef struct {
+    size_t curr;
+} hash_map_iter;
+
+/**
+ * Init iterator.
+ */
+void *hash_map_iter_begin(hash_map *h, hash_map_iter *iter);
+
+/**
+ * Get next, or null if itreation complete.
+ */
+void *hash_map_iter_next(hash_map_iter *iter);
 
 #ifdef __cplusplus
 }

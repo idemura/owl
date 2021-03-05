@@ -1,6 +1,5 @@
-#include "foundation/call_stack.h"
-#include "owl/hash_map.h"
-#include "owl/tree_map.h"
+#include "foundation/hash_map.h"
+#include "foundation/tree_map.h"
 
 #include <algorithm>
 #include <chrono>
@@ -166,8 +165,6 @@ void benchmark_hash_map()
 
 int main(int argc, char **argv)
 {
-    call_stack_init(argv[0]);
-
     benchmark_tree_map();
     std::cout << "\n";
 

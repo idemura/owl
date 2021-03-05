@@ -1,9 +1,9 @@
-#ifndef OWL_TREE_MAP_H
-#define OWL_TREE_MAP_H
+#ifndef FOUNDATION_TREE_MAP_H
+#define FOUNDATION_TREE_MAP_H
 
 #include "foundation/lang.h"
-#include "owl/memmgr.h"
-#include "owl/skey.h"
+#include "foundation/memmgr.h"
+#include "foundation/skey.h"
 
 #ifdef __cplusplus
 extern "C" {

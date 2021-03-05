@@ -200,3 +200,37 @@ TEST(hash_map, replace)
     hash_map_destroy(&h);
     EXPECT_EQ(0, mm_ctx.n_allocs);
 }
+
+TEST(hash_map, iterator_empty)
+{
+    mm_test_ctx mm_ctx{};
+    hash_map h = hash_map_new(
+            skey_compare, skey_hash, get_memmgr_for_test(), &mm_ctx, sizeof(key_value), 8);
+
+    hash_map_iter iter;
+    EXPECT_EQ(nullptr, hash_map_iter_begin(&h, &iter));
+}
+
+TEST(hash_map, iterator)
+{
+    mm_test_ctx mm_ctx{};
+    hash_map h = hash_map_new(
+            skey_compare, skey_hash, get_memmgr_for_test(), &mm_ctx, sizeof(key_value), 8);
+
+    hash_map_put_v(&h, key_value(1, 10));
+    hash_map_put_v(&h, key_value(9, 20));
+    hash_map_put_v(&h, key_value(6, 30));
+
+    long keys[3] = {};
+    size_t i = 0;
+
+    hash_map_iter iter;
+    for (void *v = hash_map_iter_begin(&h, &iter); v != nullptr; v = hash_map_iter_next(&iter)) {
+        keys[i++] = ((key_value *) v)->k;
+    }
+
+    EXPECT_EQ(3, i);
+    EXPECT_EQ(1, keys[0]);
+    EXPECT_EQ(9, keys[1]);
+    EXPECT_EQ(6, keys[2]);
+}

@@ -367,3 +367,35 @@ void hash_map_del(hash_map *h, skey_t key)
 
     h->size--;
 }
+
+void *hash_map_iter_begin(hash_map *h, hash_map_iter *iter)
+{
+    iter->curr = 0;
+    iter->h = h;
+
+    if (h->size == 0) {
+        return NULL;
+    }
+
+    hash_map_entry *e = h->array;
+    while (e->hash == 0) {
+        e = HASH_MAP_ENTRY_OFFSET(e, h->entry_size);
+        iter->curr++;
+    }
+
+    return e->value;
+}
+
+void *hash_map_iter_next(hash_map_iter *iter)
+{
+    hash_map *h = iter->h;
+
+    iter->curr++;
+    hash_map_entry *e = HASH_MAP_ENTRY_OFFSET(h->array, h->entry_size * iter->curr);
+    while (iter->curr < h->capacity && e->hash == 0) {
+        e = HASH_MAP_ENTRY_OFFSET(e, h->entry_size);
+        iter->curr++;
+    }
+
+    return  iter->curr < h->capacity ? e->value : NULL;
+}

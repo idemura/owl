@@ -90,6 +90,7 @@ void hash_map_print(const hash_map *h);
 
 typedef struct {
     size_t curr;
+    hash_map *h;
 } hash_map_iter;
 
 /**

@@ -208,7 +208,7 @@ TEST(hash_map, iterator_empty)
             skey_compare, skey_hash, get_memmgr_for_test(), &mm_ctx, sizeof(key_value), 8);
 
     hash_map_iter iter;
-    EXPECT_EQ(nullptr, hash_map_iter_begin(&h, &iter));
+    EXPECT_EQ(nullptr, hash_map_begin(&h, &iter));
 }
 
 TEST(hash_map, iterator)
@@ -225,7 +225,7 @@ TEST(hash_map, iterator)
     size_t i = 0;
 
     hash_map_iter iter;
-    for (void *v = hash_map_iter_begin(&h, &iter); v != nullptr; v = hash_map_iter_next(&iter)) {
+    for (void *v = hash_map_begin(&h, &iter); v != nullptr; v = hash_map_iter_next(&iter)) {
         keys[i++] = ((key_value *) v)->k;
     }
 

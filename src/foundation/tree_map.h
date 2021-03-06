@@ -65,7 +65,7 @@ void tree_map_put(tree_map *t, skey_t key_value);
 #define tree_map_put_v(t, key_value) \
     ({ \
         __typeof__(key_value) lvalue = (key_value); \
-        tree_map_put(t, SKEY_OF(&lvalue)); \
+        tree_map_put((t), SKEY_OF(&lvalue)); \
     })
 
 void *tree_map_get(tree_map *t, skey_t key);
@@ -73,7 +73,7 @@ void *tree_map_get(tree_map *t, skey_t key);
 #define tree_map_get_v(t, key) \
     ({ \
         __typeof__(key) lvalue = (key); \
-        tree_map_get(t, SKEY_OF(&lvalue)); \
+        tree_map_get((t), SKEY_OF(&lvalue)); \
     })
 
 void tree_map_del(tree_map *t, skey_t key);
@@ -81,7 +81,7 @@ void tree_map_del(tree_map *t, skey_t key);
 #define tree_map_del_v(t, key) \
     ({ \
         __typeof__(key) lvalue = (key); \
-        tree_map_del(t, SKEY_OF(&lvalue)); \
+        tree_map_del((t), SKEY_OF(&lvalue)); \
     })
 
 const tree_node *tree_map_path(tree_map *t, int path_len, const int *path);
@@ -89,16 +89,20 @@ const tree_node *tree_map_path(tree_map *t, int path_len, const int *path);
 #define tree_map_path_va(t, ...) \
     ({ \
         const int path[] = {__VA_ARGS__}; \
-        tree_map_path(t, array_sizeof(path), path); \
+        tree_map_path((t), array_sizeof(path), path); \
     })
 
 void *tree_map_min_key(tree_map *t);
 void *tree_map_max_key(tree_map *t);
 
 typedef struct {
-    size_t top;
+    // Iterator direction: 0 - forward, 1 - backward.
+    int dir;
 
     tree_node *empty;
+
+    // Size of the stack
+    size_t top;
 
     // We need to keep track of left branch. Because left child's level if one less than parent,
     // given max size is OWL_MAX_SIZE = 2**48 - 1, we only need to have stack of size:
@@ -109,19 +113,19 @@ typedef struct {
 } tree_map_iter;
 
 /**
- * Init iterator.
+ * Init forward/backward iterator at the first element in that direction.
  */
-void *tree_map_iter_begin(tree_map *t, tree_map_iter *iter);
+void *tree_map_begin(tree_map *t, tree_map_iter *iter, bool fwd);
 
 /**
  * Init iterator at a certain key (or greater).
  */
-void *tree_map_iter_begin_at(tree_map *t, tree_map_iter *iter, skey_t key);
+void *tree_map_begin_at(tree_map *t, tree_map_iter *iter, bool fwd, skey_t key);
 
-#define tree_map_iter_begin_at_v(t, iter, key) \
+#define tree_map_begin_at_v(t, iter, fwd, key) \
     ({ \
         __typeof__(key) lvalue = (key); \
-        tree_map_iter_begin_at(t, iter, SKEY_OF(&lvalue)); \
+        tree_map_begin_at((t), (iter), (fwd), SKEY_OF(&lvalue)); \
     })
 
 /**

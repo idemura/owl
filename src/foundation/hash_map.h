@@ -67,15 +67,15 @@ void hash_map_put(hash_map *h, skey_t key_value);
 #define hash_map_put_v(h, key_value) \
     ({ \
         __typeof__(key_value) lvalue = (key_value); \
-        hash_map_put(h, SKEY_OF(&lvalue)); \
+        hash_map_put((h), SKEY_OF(&lvalue)); \
     })
 
 void *hash_map_get(hash_map *h, skey_t key);
 
-#define hash_map_get_v(t, key) \
+#define hash_map_get_v(h, key) \
     ({ \
         __typeof__(key) lvalue = (key); \
-        hash_map_get(t, SKEY_OF(&lvalue)); \
+        hash_map_get((h), SKEY_OF(&lvalue)); \
     })
 
 void hash_map_del(hash_map *h, skey_t key);
@@ -83,7 +83,7 @@ void hash_map_del(hash_map *h, skey_t key);
 #define hash_map_del_v(h, key) \
     ({ \
         __typeof__(key) lvalue = (key); \
-        hash_map_del(h, SKEY_OF(&lvalue)); \
+        hash_map_del((h), SKEY_OF(&lvalue)); \
     })
 
 void hash_map_print(const hash_map *h);
@@ -96,7 +96,7 @@ typedef struct {
 /**
  * Init iterator.
  */
-void *hash_map_iter_begin(hash_map *h, hash_map_iter *iter);
+void *hash_map_begin(hash_map *h, hash_map_iter *iter);
 
 /**
  * Get next, or null if itreation complete.

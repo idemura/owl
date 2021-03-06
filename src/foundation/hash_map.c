@@ -368,7 +368,7 @@ void hash_map_del(hash_map *h, skey_t key)
     h->size--;
 }
 
-void *hash_map_iter_begin(hash_map *h, hash_map_iter *iter)
+void *hash_map_begin(hash_map *h, hash_map_iter *iter)
 {
     iter->curr = 0;
     iter->h = h;

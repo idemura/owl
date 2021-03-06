@@ -367,40 +367,42 @@ void *tree_map_max_key(tree_map *t)
     return node->value;
 }
 
-void *tree_map_iter_begin(tree_map *t, tree_map_iter *iter)
+void *tree_map_begin(tree_map *t, tree_map_iter *iter, bool fwd)
 {
     iter->top = 0;
     iter->empty = &t->empty;
+    iter->dir = fwd ? 0 : 1;
 
-    // Our stack contains only child[0] of the path.
+    // Our stack contains only child[dir] of the path.
     tree_node *n = t->root;
     while (n != iter->empty) {
         iter->stack[iter->top] = n;
         iter->top++;
-        n = n->child[0];
+        n = n->child[iter->dir];
     }
 
     return tree_map_iter_next(iter);
 }
 
-void *tree_map_iter_begin_at(tree_map *t, tree_map_iter *iter, skey_t key)
+void *tree_map_begin_at(tree_map *t, tree_map_iter *iter, bool fwd, skey_t key)
 {
     iter->top = 0;
     iter->empty = &t->empty;
+    iter->dir = fwd ? 0 : 1;
 
     tree_node *n = t->root;
     while (n->level != 0) {
         long d = t->compare_keys(key, SKEY_OF_NODE(n));
-        if (d <= 0) {
+        if (d == 0 || (d > 0) == iter->dir) {
             iter->stack[iter->top] = n;
             iter->top++;
             if (d == 0) {
                 break;
             }
-            n = n->child[0];
+            n = n->child[iter->dir];
         } else {
             // If we want to start to the right of this node, it whole subtree is not eligible.
-            n = n->child[1];
+            n = n->child[1 - iter->dir];
         }
     }
 
@@ -417,12 +419,12 @@ void *tree_map_iter_next(tree_map_iter *iter)
     tree_node *top = iter->stack[iter->top];
 
     // Next is the leftmost child of the right subtree or next up the stack.
-    if (top->child[1] != iter->empty) {
-        tree_node *n = top->child[1];
+    if (top->child[1 - iter->dir] != iter->empty) {
+        tree_node *n = top->child[1 - iter->dir];
         do {
             iter->stack[iter->top] = n;
             iter->top++;
-            n = n->child[0];
+            n = n->child[iter->dir];
         } while (n != iter->empty);
     }
 

@@ -7,8 +7,8 @@
 extern "C" {
 #endif
 
-// Wraps pointer to a simple key (and values). We want a type distinct from just void* to see keys
-// in the code clearly.
+// Wraps pointer to a simple key (and optionally a value). We want a type distinct from just void*
+// to see keys in the code clearly.
 typedef struct {
     const void *ptr;
 } skey_t;

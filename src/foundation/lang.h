@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-#define OWL_MAX_SIZE ((1L << 48) - 1)
+#define OWL_MAX_SIZE ((size_t)((1ul << 48) - 1))
 
 #define array_sizeof(a) (sizeof(a) / sizeof((a)[0]))
 

@@ -397,5 +397,5 @@ void *hash_map_iter_next(hash_map_iter *iter)
         iter->curr++;
     }
 
-    return  iter->curr < h->capacity ? e->value : NULL;
+    return iter->curr < h->capacity ? e->value : NULL;
 }

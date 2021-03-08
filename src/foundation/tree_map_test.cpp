@@ -1006,8 +1006,7 @@ TEST(tree_map, iterator_at_fwd)
     size_t i = 0;
 
     tree_map_iter iter;
-    for (void *v = tree_map_begin_at_v(&t, &iter, true, 250);
-            v != nullptr;
+    for (void *v = tree_map_begin_at_v(&t, &iter, true, 250); v != nullptr;
             v = tree_map_iter_next(&iter)) {
         keys[i++] = ((key_value *) v)->k;
     }
@@ -1021,8 +1020,7 @@ TEST(tree_map, iterator_at_fwd)
     EXPECT_EQ(800, keys[5]);
 
     i = 0;
-    for (void *v = tree_map_begin_at_v(&t, &iter, true, 500);
-            v != nullptr;
+    for (void *v = tree_map_begin_at_v(&t, &iter, true, 500); v != nullptr;
             v = tree_map_iter_next(&iter)) {
         keys[i++] = ((key_value *) v)->k;
     }
@@ -1034,8 +1032,7 @@ TEST(tree_map, iterator_at_fwd)
     EXPECT_EQ(800, keys[3]);
 
     i = 0;
-    for (void *v = tree_map_begin_at_v(&t, &iter, true, 720);
-            v != nullptr;
+    for (void *v = tree_map_begin_at_v(&t, &iter, true, 720); v != nullptr;
             v = tree_map_iter_next(&iter)) {
         keys[i++] = ((key_value *) v)->k;
     }
@@ -1068,8 +1065,7 @@ TEST(tree_map, iterator_at_back)
     size_t i = 0;
 
     tree_map_iter iter;
-    for (void *v = tree_map_begin_at_v(&t, &iter, false, 250);
-            v != nullptr;
+    for (void *v = tree_map_begin_at_v(&t, &iter, false, 250); v != nullptr;
             v = tree_map_iter_next(&iter)) {
         keys[i++] = ((key_value *) v)->k;
     }
@@ -1080,8 +1076,7 @@ TEST(tree_map, iterator_at_back)
     EXPECT_EQ(200, keys[2]);
 
     i = 0;
-    for (void *v = tree_map_begin_at_v(&t, &iter, false, 500);
-            v != nullptr;
+    for (void *v = tree_map_begin_at_v(&t, &iter, false, 500); v != nullptr;
             v = tree_map_iter_next(&iter)) {
         keys[i++] = ((key_value *) v)->k;
     }
@@ -1094,8 +1089,7 @@ TEST(tree_map, iterator_at_back)
     EXPECT_EQ(200, keys[4]);
 
     i = 0;
-    for (void *v = tree_map_begin_at_v(&t, &iter, false, 720);
-            v != nullptr;
+    for (void *v = tree_map_begin_at_v(&t, &iter, false, 720); v != nullptr;
             v = tree_map_iter_next(&iter)) {
         keys[i++] = ((key_value *) v)->k;
     }

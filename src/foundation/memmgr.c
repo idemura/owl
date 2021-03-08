@@ -2,12 +2,20 @@
 
 static void *stdmm_allocate_dirty(void *ctx, size_t size)
 {
-    return malloc(size);
+    void *ptr = malloc(size);
+    if (!ptr) {
+        die("allocation failed: %zu", size);
+    }
+    return ptr;
 }
 
 static void *stdmm_allocate_clear(void *ctx, size_t size)
 {
-    return calloc(1, size);
+    void *ptr = calloc(1, size);
+    if (!ptr) {
+        die("allocation failed: %zu", size);
+    }
+    return ptr;
 }
 
 static void stdmm_release(void *ctx, void *ptr)

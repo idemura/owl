@@ -4,7 +4,7 @@
 
 typedef def_vector_of(int) vector_int;
 
-TEST(vector, basic_add_get)
+TEST(vector, basic_ops)
 {
     vector_int v;
     vector_init(&v);

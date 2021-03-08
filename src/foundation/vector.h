@@ -35,7 +35,7 @@ typedef struct {
     ({ \
         __typeof__(v) _v = v; \
         if (_v->size == _v->capacity) { \
-            vector_realloc((vector *) _v, sizeof(*_v->array), _v->size + 1); \
+            vector_increase_capacity((vector *) _v, sizeof(*_v->array), _v->size + 1); \
         } \
         _v->array[_v->size] = val; \
         _v->size++; \
@@ -50,7 +50,7 @@ typedef struct {
         __typeof__(v) _v = v; \
         size_t _n = n; \
         __typeof__(sizeof(*_v->array)) _a = val; \
-        vector_realloc((vector *) _v, sizeof(*_v->array), _v->size + _n); \
+        vector_increase_capacity((vector *) _v, sizeof(*_v->array), _v->size + _n); \
         for (size_t _i = 0; _i < _n; ++_i) { \
             _v->array[_v->size + _i] = _a; \
         } \
@@ -65,21 +65,25 @@ typedef struct {
         _v->array[_v->size]; \
     })
 
+#define vector_remove(v, from, n) \
+    ({ \
+        __typeof__(v) _v = v; \
+        vector_remove_impl((vector *) _v, sizeof(*_v->array), from, n); \
+    })
+
 #ifdef NDEBUG
-#define vector_ptr_at(v, i) ((v)->array + (i))
+#define vector_ptr(v, i) ((v)->array + (i))
 #else
-#define vector_ptr_at(v, i) \
+#define vector_ptr(v, i) \
     ({ \
         __typeof__(v) _v = v; \
         size_t _i = i; \
-        if (_i >= _v->size) { \
-            die("index %zu out of bounds: %zu", _i, _v->size); \
-        } \
+        vector_check_index((vector *) _v, _i); \
         _v->array + _i; \
     })
 #endif
 
-#define vector_at(v, i) *vector_ptr_at(v, i)
+#define vector_get(v, i) *vector_ptr(v, i)
 
 #define vector_init(v) \
     ({ \
@@ -102,8 +106,9 @@ typedef struct {
 #define vector_foreach(e, v) \
     for (__typeof__((v)->array) e = (v)->array, _last = (v)->array + (v)->size; e != _last; ++e)
 
-// Private function
-void vector_realloc(vector *v, size_t entry_size, size_t new_size);
+void vector_check_index(const vector *v, size_t i);
+void vector_increase_capacity(vector *v, size_t entry_size, size_t new_size);
+void vector_remove_impl(vector *v, size_t entry_size, size_t first, size_t n);
 
 #ifdef __cplusplus
 }

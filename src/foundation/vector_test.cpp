@@ -40,15 +40,15 @@ TEST(vector, basic_add_get)
     EXPECT_EQ(16, v.capacity);
     EXPECT_EQ(9, vector_size(&v));
 
-    EXPECT_EQ(10, vector_at(&v, 0));
-    EXPECT_EQ(11, vector_at(&v, 1));
-    EXPECT_EQ(12, vector_at(&v, 2));
-    EXPECT_EQ(13, vector_at(&v, 3));
-    EXPECT_EQ(20, vector_at(&v, 4));
-    EXPECT_EQ(21, vector_at(&v, 5));
-    EXPECT_EQ(22, vector_at(&v, 6));
-    EXPECT_EQ(23, vector_at(&v, 7));
-    EXPECT_EQ(24, vector_at(&v, 8));
+    EXPECT_EQ(10, vector_get(&v, 0));
+    EXPECT_EQ(11, vector_get(&v, 1));
+    EXPECT_EQ(12, vector_get(&v, 2));
+    EXPECT_EQ(13, vector_get(&v, 3));
+    EXPECT_EQ(20, vector_get(&v, 4));
+    EXPECT_EQ(21, vector_get(&v, 5));
+    EXPECT_EQ(22, vector_get(&v, 6));
+    EXPECT_EQ(23, vector_get(&v, 7));
+    EXPECT_EQ(24, vector_get(&v, 8));
 
     vector_foreach(x, &v) {
         if (*x < 20) {
@@ -56,31 +56,39 @@ TEST(vector, basic_add_get)
         }
     }
 
-    EXPECT_EQ(15, vector_at(&v, 0));
-    EXPECT_EQ(16, vector_at(&v, 1));
-    EXPECT_EQ(17, vector_at(&v, 2));
-    EXPECT_EQ(18, vector_at(&v, 3));
-    EXPECT_EQ(20, vector_at(&v, 4));
-    EXPECT_EQ(21, vector_at(&v, 5));
-    EXPECT_EQ(22, vector_at(&v, 6));
-    EXPECT_EQ(23, vector_at(&v, 7));
-    EXPECT_EQ(24, vector_at(&v, 8));
+    EXPECT_EQ(15, vector_get(&v, 0));
+    EXPECT_EQ(16, vector_get(&v, 1));
+    EXPECT_EQ(17, vector_get(&v, 2));
+    EXPECT_EQ(18, vector_get(&v, 3));
+    EXPECT_EQ(20, vector_get(&v, 4));
+    EXPECT_EQ(21, vector_get(&v, 5));
+    EXPECT_EQ(22, vector_get(&v, 6));
+    EXPECT_EQ(23, vector_get(&v, 7));
+    EXPECT_EQ(24, vector_get(&v, 8));
 
-    *vector_ptr_at(&v, 4) = 30;
+    *vector_ptr(&v, 4) = 30;
 
-    EXPECT_EQ(15, vector_at(&v, 0));
-    EXPECT_EQ(16, vector_at(&v, 1));
-    EXPECT_EQ(17, vector_at(&v, 2));
-    EXPECT_EQ(18, vector_at(&v, 3));
-    EXPECT_EQ(30, vector_at(&v, 4));
-    EXPECT_EQ(21, vector_at(&v, 5));
-    EXPECT_EQ(22, vector_at(&v, 6));
-    EXPECT_EQ(23, vector_at(&v, 7));
-    EXPECT_EQ(24, vector_at(&v, 8));
+    EXPECT_EQ(15, vector_get(&v, 0));
+    EXPECT_EQ(16, vector_get(&v, 1));
+    EXPECT_EQ(17, vector_get(&v, 2));
+    EXPECT_EQ(18, vector_get(&v, 3));
+    EXPECT_EQ(30, vector_get(&v, 4));
+    EXPECT_EQ(21, vector_get(&v, 5));
+    EXPECT_EQ(22, vector_get(&v, 6));
+    EXPECT_EQ(23, vector_get(&v, 7));
+    EXPECT_EQ(24, vector_get(&v, 8));
 
     EXPECT_EQ(24, vector_pop(&v));
     EXPECT_EQ(16, v.capacity);
     EXPECT_EQ(8, vector_size(&v));
+
+    vector_remove(&v, 3, 5);
+    EXPECT_EQ(16, v.capacity);
+    EXPECT_EQ(3, vector_size(&v));
+
+    EXPECT_EQ(15, vector_get(&v, 0));
+    EXPECT_EQ(16, vector_get(&v, 1));
+    EXPECT_EQ(17, vector_get(&v, 2));
 }
 
 TEST(vector, add_n)
@@ -92,11 +100,11 @@ TEST(vector, add_n)
 
     vector_add_n(&v, 10, 5);
 
-    EXPECT_EQ(10, vector_at(&v, 0));
-    EXPECT_EQ(10, vector_at(&v, 1));
-    EXPECT_EQ(10, vector_at(&v, 2));
-    EXPECT_EQ(10, vector_at(&v, 3));
-    EXPECT_EQ(10, vector_at(&v, 4));
+    EXPECT_EQ(10, vector_get(&v, 0));
+    EXPECT_EQ(10, vector_get(&v, 1));
+    EXPECT_EQ(10, vector_get(&v, 2));
+    EXPECT_EQ(10, vector_get(&v, 3));
+    EXPECT_EQ(10, vector_get(&v, 4));
 
     EXPECT_EQ(8, v.capacity);
     EXPECT_EQ(5, vector_size(&v));

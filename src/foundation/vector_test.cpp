@@ -2,41 +2,43 @@
 
 #include <gtest/gtest.h>
 
-TEST(vector, insert)
+typedef def_vector_of(int) vector_int;
+
+TEST(vector, basic_add_get)
 {
-    def_vector_of(int) v;
+    vector_int v;
     vector_init(&v);
     EXPECT_EQ(0, v.capacity);
 
     vector_add(&v, 10);
     EXPECT_EQ(4, v.capacity);
-    EXPECT_EQ(1, v.size);
+    EXPECT_EQ(1, vector_size(&v));
 
     vector_add(&v, 11);
     EXPECT_EQ(4, v.capacity);
-    EXPECT_EQ(2, v.size);
+    EXPECT_EQ(2, vector_size(&v));
 
     vector_add(&v, 12);
     EXPECT_EQ(4, v.capacity);
-    EXPECT_EQ(3, v.size);
+    EXPECT_EQ(3, vector_size(&v));
 
     vector_add(&v, 13);
     EXPECT_EQ(4, v.capacity);
-    EXPECT_EQ(4, v.size);
+    EXPECT_EQ(4, vector_size(&v));
 
     vector_add(&v, 20);
     EXPECT_EQ(8, v.capacity);
-    EXPECT_EQ(5, v.size);
+    EXPECT_EQ(5, vector_size(&v));
 
     vector_add(&v, 21);
     vector_add(&v, 22);
     vector_add(&v, 23);
     EXPECT_EQ(8, v.capacity);
-    EXPECT_EQ(8, v.size);
+    EXPECT_EQ(8, vector_size(&v));
 
     vector_add(&v, 24);
     EXPECT_EQ(16, v.capacity);
-    EXPECT_EQ(9, v.size);
+    EXPECT_EQ(9, vector_size(&v));
 
     EXPECT_EQ(10, vector_at(&v, 0));
     EXPECT_EQ(11, vector_at(&v, 1));
@@ -78,5 +80,24 @@ TEST(vector, insert)
 
     EXPECT_EQ(24, vector_pop(&v));
     EXPECT_EQ(16, v.capacity);
-    EXPECT_EQ(8, v.size);
+    EXPECT_EQ(8, vector_size(&v));
+}
+
+TEST(vector, add_n)
+{
+    vector_int v;
+    vector_init_capacity(&v, 3);
+    EXPECT_EQ(3, v.capacity);
+    EXPECT_EQ(0, vector_size(&v));
+
+    vector_add_n(&v, 10, 5);
+
+    EXPECT_EQ(10, vector_at(&v, 0));
+    EXPECT_EQ(10, vector_at(&v, 1));
+    EXPECT_EQ(10, vector_at(&v, 2));
+    EXPECT_EQ(10, vector_at(&v, 3));
+    EXPECT_EQ(10, vector_at(&v, 4));
+
+    EXPECT_EQ(8, v.capacity);
+    EXPECT_EQ(5, vector_size(&v));
 }

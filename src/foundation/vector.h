@@ -15,7 +15,6 @@ extern "C" {
 typedef struct {
     size_t size;
     size_t capacity;
-
     void *array;
 } vector;
 
@@ -23,28 +22,47 @@ typedef struct {
     struct vector_##T { \
         size_t size; \
         size_t capacity; \
-        T *array; \
+        union { \
+            T *array; \
+            /* for C++ */ void *vp; \
+        }; \
     }
 
 /**
- * Add new value to the end of vector @v. @v is a pointer to the vector.
+ * Add value to the end of the vector @v. @v is a pointer to the vector.
  */
 #define vector_add(v, val) \
     ({ \
-        __typeof__(v) vptr = v; \
-        if (vptr->size == vptr->capacity) { \
-            ((vector *) vptr)->array = \
-                    vector_realloc_(vptr->array, sizeof(*vptr->array), &vptr->capacity); \
+        __typeof__(v) _v = v; \
+        if (_v->size == _v->capacity) { \
+            vector_realloc((vector *) _v, sizeof(*_v->array), _v->size + 1); \
         } \
-        vptr->array[vptr->size] = val; \
-        vptr->size++; \
+        _v->array[_v->size] = val; \
+        _v->size++; \
+        /* return */ _v->size; \
+    })
+
+/**
+ * Add value to the end of the vector @v n times.
+ */
+#define vector_add_n(v, val, n) \
+    ({ \
+        __typeof__(v) _v = v; \
+        size_t _n = n; \
+        __typeof__(sizeof(*_v->array)) _a = val; \
+        vector_realloc((vector *) _v, sizeof(*_v->array), _v->size + _n); \
+        for (size_t _i = 0; _i < _n; ++_i) { \
+            _v->array[_v->size + _i] = _a; \
+        } \
+        _v->size += _n; \
+        /* return */ _v->size; \
     })
 
 #define vector_pop(v) \
     ({ \
-        __typeof__(v) vptr = v; \
-        vptr->size--; \
-        vptr->array[vptr->size]; \
+        __typeof__(v) _v = v; \
+        _v->size--; \
+        _v->array[_v->size]; \
     })
 
 #ifdef NDEBUG
@@ -52,12 +70,12 @@ typedef struct {
 #else
 #define vector_ptr_at(v, i) \
     ({ \
-        __typeof__(v) vptr = v; \
+        __typeof__(v) _v = v; \
         size_t _i = i; \
-        if (_i >= vptr->size) { \
-            die("index %zu out of bounds: %zu", _i, vptr->size); \
+        if (_i >= _v->size) { \
+            die("index %zu out of bounds: %zu", _i, _v->size); \
         } \
-        vptr->array + _i; \
+        _v->array + _i; \
     })
 #endif
 
@@ -65,18 +83,18 @@ typedef struct {
 
 #define vector_init(v) \
     ({ \
-        __typeof__(v) vptr = v; \
-        vptr->size = 0; \
-        vptr->capacity = 0; \
-        vptr->array = NULL; \
+        __typeof__(v) _v = v; \
+        _v->size = 0; \
+        _v->capacity = 0; \
+        _v->array = NULL; \
     })
 
 #define vector_init_capacity(v, cap) \
     ({ \
-        __typeof__(v) vptr = v; \
-        vptr->size = 0; \
-        vptr->capacity = cap; \
-        vptr->array = get_memgr()->allocate_dirty(sizeof(*vptr->array) * cap); \
+        __typeof__(v) _v = v; \
+        _v->size = 0; \
+        _v->capacity = cap; \
+        _v->vp = get_memmgr()->allocate_dirty(NULL, sizeof(*_v->array) * cap); \
     })
 
 #define vector_size(v) (v)->size
@@ -85,7 +103,7 @@ typedef struct {
     for (__typeof__((v)->array) e = (v)->array, _last = (v)->array + (v)->size; e != _last; ++e)
 
 // Private function
-void *vector_realloc_(void *array, size_t entry_size, size_t *capacity);
+void vector_realloc(vector *v, size_t entry_size, size_t new_size);
 
 #ifdef __cplusplus
 }

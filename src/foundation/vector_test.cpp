@@ -6,9 +6,12 @@ typedef def_vector_of(int) vector_int;
 
 TEST(vector, basic_ops)
 {
+    memmgr_ctx mmc{};
+
     vector_int v;
-    vector_init(&v);
+    vector_init_with_ctx(&v, &mmc);
     EXPECT_EQ(0, v.capacity);
+    EXPECT_EQ(0, vector_size(&v));
 
     vector_add(&v, 10);
     EXPECT_EQ(4, v.capacity);
@@ -89,12 +92,18 @@ TEST(vector, basic_ops)
     EXPECT_EQ(15, vector_get(&v, 0));
     EXPECT_EQ(16, vector_get(&v, 1));
     EXPECT_EQ(17, vector_get(&v, 2));
+
+    EXPECT_EQ(1, mmc.n_allocs);
+    vector_release(&v);
+    EXPECT_EQ(0, mmc.n_allocs);
 }
 
 TEST(vector, add_n)
 {
+    memmgr_ctx mmc{};
+
     vector_int v;
-    vector_init_capacity(&v, 3);
+    vector_init_capacity_with_ctx(&v, 3, &mmc);
     EXPECT_EQ(3, v.capacity);
     EXPECT_EQ(0, vector_size(&v));
 
@@ -108,4 +117,8 @@ TEST(vector, add_n)
 
     EXPECT_EQ(8, v.capacity);
     EXPECT_EQ(5, vector_size(&v));
+
+    EXPECT_EQ(1, mmc.n_allocs);
+    vector_release(&v);
+    EXPECT_EQ(0, mmc.n_allocs);
 }

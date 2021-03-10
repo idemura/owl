@@ -7,30 +7,27 @@
 extern "C" {
 #endif
 
-// Memory manager/allocator.
-
-typedef struct {
-    // Allocate dirty memory
-    void *(*allocate_dirty)(void *ctx, size_t size);
-
-    // Allocate clear memory (init with 0)
-    void *(*allocate_clear)(void *ctx, size_t size);
-
-    // Releases allocated memory (@ptr can be NULL).
-    void (*release)(void *ctx, void *ptr);
-} memmgr;
+/**
+ * Memory manager/allocator.
+ */
 
 typedef struct {
     long n_allocs;
-} mm_test_ctx;
-
-const memmgr *get_memmgr(void);
-const memmgr *get_memmgr_for_test(void);
+} memmgr_ctx;
 
 inline static size_t pad_size_l(size_t size)
 {
     return (size + sizeof(long) - 1) & ~(sizeof(long) - 1);
 }
+
+// Allocate dirty memory
+void *memmgr_allocate_dirty(memmgr_ctx *ctx, size_t size);
+
+// Allocate clear memory (init with 0)
+void *memmgr_allocate_clear(memmgr_ctx *ctx, size_t size);
+
+// Releases allocated memory (@ptr can be NULL).
+void memmgr_release(memmgr_ctx *ctx, void *ptr);
 
 #ifdef __cplusplus
 }

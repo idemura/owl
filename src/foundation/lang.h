@@ -21,8 +21,9 @@ extern "C" {
 
 #define ATTR_NO_INLINE __attribute__((noinline))
 
-bool str_starts_with(const char *s, const char *pattern);
 noreturn void die(const char *format, ...);
+
+bool str_starts_with(const char *s, const char *pattern);
 
 // Overload type notation:
 // I - i32

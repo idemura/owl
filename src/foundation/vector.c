@@ -16,8 +16,6 @@ void vector_increase_capacity(vector *v, size_t entry_size, size_t new_size)
         die("vector: capacity over OWL_MAX_SIZE (%zu), new_size=%zu", OWL_MAX_SIZE, new_size);
     }
 
-    const memmgr *mm = get_memmgr();
-
     size_t cap = v->capacity;
     if (cap < MIN_CAPACITY) {
         cap = MIN_CAPACITY;
@@ -37,12 +35,12 @@ void vector_increase_capacity(vector *v, size_t entry_size, size_t new_size)
     }
 
     size_t byte_size = entry_size * cap;
-    void *p = mm->allocate_dirty(NULL, byte_size);
+    void *p = memmgr_allocate_dirty(v->mmc, byte_size);
 
     if (v->capacity > 0) {
         // Copy old data to the new memory and release current array
         memcpy(p, v->array, entry_size * v->size);
-        mm->release(NULL, v->array);
+        memmgr_release(v->mmc, v->array);
     }
 
     v->capacity = cap;

@@ -33,19 +33,17 @@ typedef struct {
     // Number of nodes in the tree
     size_t size;
 
-    const memmgr *mm;
-    void *mm_ctx;
+    memmgr_ctx *mmc;
 
     tree_node empty;
 } tree_map;
 
 // Create a new instance of a map
-tree_map tree_map_new(
-        skey_compare_fn compare_keys, const memmgr *mm, void *mm_ctx, size_t value_size);
+tree_map tree_map_new(skey_compare_fn compare_keys, memmgr_ctx *mmc, size_t value_size);
 
 inline static tree_map tree_map_new_default(skey_compare_fn compare_keys, size_t value_size)
 {
-    return tree_map_new(compare_keys, get_memmgr(), NULL, value_size);
+    return tree_map_new(compare_keys, NULL, value_size);
 }
 
 tree_map tree_map_clone(const tree_map *t);
@@ -112,14 +110,10 @@ typedef struct {
     tree_node *stack[48];
 } tree_map_iter;
 
-/**
- * Init forward/backward iterator at the first element in that direction.
- */
+// Init forward/backward iterator at the first element in that direction.
 void *tree_map_begin(tree_map *t, tree_map_iter *iter, bool fwd);
 
-/**
- * Init iterator at a certain key (or greater).
- */
+// Init iterator at a certain key (or greater).
 void *tree_map_begin_at(tree_map *t, tree_map_iter *iter, bool fwd, skey_t key);
 
 #define tree_map_begin_at_v(t, iter, fwd, key) \
@@ -128,9 +122,7 @@ void *tree_map_begin_at(tree_map *t, tree_map_iter *iter, bool fwd, skey_t key);
         tree_map_begin_at((t), (iter), (fwd), SKEY_OF(&lvalue)); \
     })
 
-/**
- * Get next, or null if itreation complete.
- */
+// Get next, or null if itreation complete.
 void *tree_map_iter_next(tree_map_iter *iter);
 
 #ifdef __cplusplus

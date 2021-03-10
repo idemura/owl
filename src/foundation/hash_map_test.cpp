@@ -36,9 +36,8 @@ static const hash_map_entry *get_entry(const hash_map *h, size_t i)
 
 TEST(hash_map, put_get)
 {
-    mm_test_ctx mm_ctx{};
-    hash_map h = hash_map_new(
-            skey_compare, skey_hash, get_memmgr_for_test(), &mm_ctx, sizeof(key_value), 4);
+    memmgr_ctx mmc{};
+    hash_map h = hash_map_new(skey_compare, skey_hash, &mmc, sizeof(key_value), 4);
     EXPECT_EQ(0, hash_map_size(&h));
 
     hash_map_put_v(&h, key_value(1, 10));
@@ -90,14 +89,13 @@ TEST(hash_map, put_get)
     EXPECT_EQ(21, get_entry(&h, 7)->hash);
 
     hash_map_destroy(&h);
-    EXPECT_EQ(0, mm_ctx.n_allocs);
+    EXPECT_EQ(0, mmc.n_allocs);
 }
 
 TEST(hash_map, put_del_1)
 {
-    mm_test_ctx mm_ctx{};
-    hash_map h = hash_map_new(
-            skey_compare, skey_hash, get_memmgr_for_test(), &mm_ctx, sizeof(key_value), 8);
+    memmgr_ctx mmc{};
+    hash_map h = hash_map_new(skey_compare, skey_hash, &mmc, sizeof(key_value), 8);
 
     hash_map_put_v(&h, key_value(1, 10));
     hash_map_put_v(&h, key_value(2, 20));
@@ -117,14 +115,13 @@ TEST(hash_map, put_del_1)
     EXPECT_EQ(NULL, hash_map_get_v(&h, 5));
 
     hash_map_destroy(&h);
-    EXPECT_EQ(0, mm_ctx.n_allocs);
+    EXPECT_EQ(0, mmc.n_allocs);
 }
 
 TEST(hash_map, put_del_2)
 {
-    mm_test_ctx mm_ctx{};
-    hash_map h = hash_map_new(
-            skey_compare, skey_hash, get_memmgr_for_test(), &mm_ctx, sizeof(key_value), 8);
+    memmgr_ctx mmc{};
+    hash_map h = hash_map_new(skey_compare, skey_hash, &mmc, sizeof(key_value), 8);
 
     hash_map_put_v(&h, key_value(6, 10));
     hash_map_put_v(&h, key_value(14, 20));
@@ -140,14 +137,13 @@ TEST(hash_map, put_del_2)
     EXPECT_EQ(NULL, hash_map_get_v(&h, 6));
 
     hash_map_destroy(&h);
-    EXPECT_EQ(0, mm_ctx.n_allocs);
+    EXPECT_EQ(0, mmc.n_allocs);
 }
 
 TEST(hash_map, put_del_3)
 {
-    mm_test_ctx mm_ctx{};
-    hash_map h = hash_map_new(
-            skey_compare, skey_hash, get_memmgr_for_test(), &mm_ctx, sizeof(key_value), 8);
+    memmgr_ctx mmc{};
+    hash_map h = hash_map_new(skey_compare, skey_hash, &mmc, sizeof(key_value), 8);
 
     hash_map_put_v(&h, key_value(1, 10));
     hash_map_put_v(&h, key_value(9, 20));
@@ -175,14 +171,13 @@ TEST(hash_map, put_del_3)
     EXPECT_EQ(NULL, hash_map_get_v(&h, 9));
 
     hash_map_destroy(&h);
-    EXPECT_EQ(0, mm_ctx.n_allocs);
+    EXPECT_EQ(0, mmc.n_allocs);
 }
 
 TEST(hash_map, replace)
 {
-    mm_test_ctx mm_ctx{};
-    hash_map h = hash_map_new(
-            skey_compare, skey_hash, get_memmgr_for_test(), &mm_ctx, sizeof(key_value), 8);
+    memmgr_ctx mmc{};
+    hash_map h = hash_map_new(skey_compare, skey_hash, &mmc, sizeof(key_value), 8);
 
     hash_map_put_v(&h, key_value(1, 10));
     hash_map_put_v(&h, key_value(9, 20));
@@ -198,14 +193,13 @@ TEST(hash_map, replace)
     EXPECT_EQ(31, ((key_value *) hash_map_get_v(&h, 6))->v);
 
     hash_map_destroy(&h);
-    EXPECT_EQ(0, mm_ctx.n_allocs);
+    EXPECT_EQ(0, mmc.n_allocs);
 }
 
 TEST(hash_map, iterator_empty)
 {
-    mm_test_ctx mm_ctx{};
-    hash_map h = hash_map_new(
-            skey_compare, skey_hash, get_memmgr_for_test(), &mm_ctx, sizeof(key_value), 8);
+    memmgr_ctx mmc{};
+    hash_map h = hash_map_new(skey_compare, skey_hash, &mmc, sizeof(key_value), 8);
 
     hash_map_iter iter;
     EXPECT_EQ(nullptr, hash_map_begin(&h, &iter));
@@ -213,9 +207,8 @@ TEST(hash_map, iterator_empty)
 
 TEST(hash_map, iterator)
 {
-    mm_test_ctx mm_ctx{};
-    hash_map h = hash_map_new(
-            skey_compare, skey_hash, get_memmgr_for_test(), &mm_ctx, sizeof(key_value), 8);
+    memmgr_ctx mmc{};
+    hash_map h = hash_map_new(skey_compare, skey_hash, &mmc, sizeof(key_value), 8);
 
     hash_map_put_v(&h, key_value(1, 10));
     hash_map_put_v(&h, key_value(9, 20));

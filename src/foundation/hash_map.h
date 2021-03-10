@@ -35,22 +35,20 @@ typedef struct {
 
     size_t entry_size;
 
-    const memmgr *mm;
-    void *mm_ctx;
+    memmgr_ctx *mmc;
 } hash_map;
 
 hash_map hash_map_new(
         skey_compare_fn compare_keys,
         skey_hash_fn hash_key,
-        const memmgr *mm,
-        void *mm_ctx,
+        memmgr_ctx *mmc,
         size_t value_size,
         size_t capacity);
 
 inline static hash_map hash_map_new_default(
         skey_compare_fn compare_keys, skey_hash_fn hash_key, size_t value_size)
 {
-    return hash_map_new(compare_keys, hash_key, get_memmgr(), NULL, value_size, 0);
+    return hash_map_new(compare_keys, hash_key, NULL, value_size, 0);
 }
 
 hash_map hash_map_clone(const hash_map *h);
@@ -93,14 +91,10 @@ typedef struct {
     hash_map *h;
 } hash_map_iter;
 
-/**
- * Init iterator.
- */
+// Init iterator.
 void *hash_map_begin(hash_map *h, hash_map_iter *iter);
 
-/**
- * Get next, or null if itreation complete.
- */
+// Get next, or null if iteration complete.
 void *hash_map_iter_next(hash_map_iter *iter);
 
 #ifdef __cplusplus

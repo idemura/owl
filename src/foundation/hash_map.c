@@ -12,7 +12,7 @@ static bool is_power_of_2(size_t x)
 ATTR_NO_INLINE
 static hash_map_entry *hash_map_alloc(const hash_map *h, size_t capacity)
 {
-    void *array = h->mm->allocate_dirty(h->mm_ctx, h->entry_size * capacity);
+    void *array = memmgr_allocate_dirty(h->mmc, h->entry_size * capacity);
     hash_map_entry *iter = array;
     for (size_t i = 0; i < capacity; i++) {
         iter->hash = 0;
@@ -29,8 +29,7 @@ inline static size_t hash_map_psl(uint64_t hash, size_t i, size_t capacity)
 hash_map hash_map_new(
         skey_compare_fn compare_keys,
         skey_hash_fn hash_key,
-        const memmgr *mm,
-        void *mm_ctx,
+        memmgr_ctx *mmc,
         size_t value_size,
         size_t capacity)
 {
@@ -42,8 +41,7 @@ hash_map hash_map_new(
             .hash_key = hash_key,
             .capacity = capacity,
             .entry_size = sizeof(hash_map_entry) + value_size,
-            .mm = mm,
-            .mm_ctx = mm_ctx,
+            .mmc = mmc,
     };
     // clang-format on
 
@@ -64,7 +62,7 @@ hash_map hash_map_new(
 
 void hash_map_destroy(hash_map *h)
 {
-    h->mm->release(h->mm_ctx, h->array);
+    memmgr_release(h->mmc, h->array);
     *h = (hash_map){0};
 }
 
@@ -164,7 +162,7 @@ static void hash_map_double_capacity(hash_map *h)
         iter = HASH_MAP_ENTRY_OFFSET(iter, h->entry_size);
     }
 
-    h->mm->release(h->mm_ctx, h->array);
+    memmgr_release(h->mmc, h->array);
     h->array = array;
     h->capacity = double_cap;
 }

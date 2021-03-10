@@ -4,14 +4,12 @@
 
 #define SKEY_OF_NODE(n) SKEY_OF((n)->value)
 
-tree_map tree_map_new(
-        skey_compare_fn compare_keys, const memmgr *mm, void *mm_ctx, size_t value_size)
+tree_map tree_map_new(skey_compare_fn compare_keys, memmgr_ctx *mmc, size_t value_size)
 {
     tree_map t = {
             .compare_keys = compare_keys,
             .value_size = pad_size_l(value_size),
-            .mm = mm,
-            .mm_ctx = mm_ctx,
+            .mmc = mmc,
     };
     t.empty.child[0] = &t.empty;
     t.empty.child[1] = &t.empty;
@@ -26,7 +24,7 @@ tree_node *tree_map_clone_rec(tree_map *c, const tree_map *t, const tree_node *n
     }
 
     size_t n_bytes = sizeof(tree_node) + c->value_size;
-    tree_node *n = c->mm->allocate_dirty(c->mm_ctx, n_bytes);
+    tree_node *n = memmgr_allocate_dirty(c->mmc, n_bytes);
     memcpy(n, node, n_bytes);
     n->child[0] = tree_map_clone_rec(c, t, node->child[0]);
     n->child[1] = tree_map_clone_rec(c, t, node->child[1]);
@@ -79,18 +77,18 @@ const tree_node *tree_map_check(const tree_map *t)
     return tree_map_check_rec(t->root);
 }
 
-static void tree_map_destroy_rec(const memmgr *mm, void *mm_ctx, tree_node *node)
+static void tree_map_destroy_rec(memmgr_ctx *mmc, tree_node *node)
 {
     if (node->level != 0) {
-        tree_map_destroy_rec(mm, mm_ctx, node->child[0]);
-        tree_map_destroy_rec(mm, mm_ctx, node->child[1]);
-        mm->release(mm_ctx, node);
+        tree_map_destroy_rec(mmc, node->child[0]);
+        tree_map_destroy_rec(mmc, node->child[1]);
+        memmgr_release(mmc, node);
     }
 }
 
 void tree_map_destroy(tree_map *t)
 {
-    tree_map_destroy_rec(t->mm, t->mm_ctx, t->root);
+    tree_map_destroy_rec(t->mmc, t->root);
     *t = (tree_map){0};
 }
 
@@ -106,7 +104,7 @@ inline static tree_node *tree_map_rotate(tree_node *n, int b)
 static tree_node *tree_map_put_rec(tree_map *t, skey_t key, tree_node *node)
 {
     if (node->level == 0) {
-        tree_node *n = t->mm->allocate_dirty(t->mm_ctx, sizeof(tree_node) + t->value_size);
+        tree_node *n = memmgr_allocate_dirty(t->mmc, sizeof(tree_node) + t->value_size);
         n->child[0] = &t->empty;
         n->child[1] = &t->empty;
         n->level = 1;
@@ -327,7 +325,7 @@ void tree_map_del(tree_map *t, skey_t key)
     tree_node *node = tree_map_find_node(t, key);
     if (node != NULL) {
         t->root = tree_map_del_rec(t, key, t->root);
-        t->mm->release(t->mm_ctx, node);
+        memmgr_release(t->mmc, node);
         t->size--;
     }
 }

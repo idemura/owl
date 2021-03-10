@@ -15,6 +15,7 @@ extern "C" {
 typedef struct {
     size_t size;
     size_t capacity;
+    memmgr_ctx *mmc;
     void *array;
 } vector;
 
@@ -22,15 +23,14 @@ typedef struct {
     struct vector_##T { \
         size_t size; \
         size_t capacity; \
+        memmgr_ctx *mmc; \
         union { \
             T *array; \
             /* for C++ */ void *vp; \
         }; \
     }
 
-/**
- * Add value to the end of the vector @v. @v is a pointer to the vector.
- */
+// Add value to the end of the vector @v. @v is a pointer to the vector.
 #define vector_add(v, val) \
     ({ \
         __typeof__(v) _v = v; \
@@ -42,9 +42,7 @@ typedef struct {
         /* return */ _v->size; \
     })
 
-/**
- * Add value to the end of the vector @v n times.
- */
+// Add value to the end of the vector @v n times.
 #define vector_add_n(v, val, n) \
     ({ \
         __typeof__(v) _v = v; \
@@ -85,26 +83,38 @@ typedef struct {
 
 #define vector_get(v, i) *vector_ptr(v, i)
 
-#define vector_init(v) \
+#define vector_init(v) vector_init_with_ctx(v, NULL)
+
+#define vector_init_with_ctx(v, ctx) \
     ({ \
         __typeof__(v) _v = v; \
         _v->size = 0; \
         _v->capacity = 0; \
+        _v->mmc = (ctx); \
         _v->array = NULL; \
     })
 
-#define vector_init_capacity(v, cap) \
+#define vector_init_capacity(v, cap) vector_init_capacity_with_ctx(v, cap, NULL)
+
+#define vector_init_capacity_with_ctx(v, cap, ctx) \
     ({ \
         __typeof__(v) _v = v; \
         _v->size = 0; \
-        _v->capacity = cap; \
-        _v->vp = get_memmgr()->allocate_dirty(NULL, sizeof(*_v->array) * cap); \
+        _v->capacity = (cap); \
+        _v->mmc = (ctx); \
+        _v->vp = memmgr_allocate_dirty(_v->mmc, sizeof(*_v->array) * _v->capacity); \
     })
 
 #define vector_size(v) (v)->size
 
 #define vector_foreach(e, v) \
     for (__typeof__((v)->array) e = (v)->array, _last = (v)->array + (v)->size; e != _last; ++e)
+
+#define vector_release(v) \
+    ({ \
+        __typeof__(v) _v = v; \
+        memmgr_release(_v->mmc, _v->array); \
+    })
 
 void vector_check_index(const vector *v, size_t i);
 void vector_increase_capacity(vector *v, size_t entry_size, size_t new_size);

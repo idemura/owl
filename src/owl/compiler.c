@@ -18,7 +18,18 @@ static string read_file(owl_context *ctx, const char *file_name)
     long size = ftell(f);
     fseek(f, 0L, SEEK_SET);
 
-    printf("%ld\n", size);
+    char *buf = memmgr_allocate_dirty(NULL, size + 1);
+    size_t read_size = fread(buf, 1, size, f);
+    if (read_size != size) {
+        fprintf(ctx->f_out, "Failed to read file '%s': %zu size %zu\n", file_name, read_size, size);
+        goto fail;
+    }
+
+    buf[size] = 0;
+    return string_of_len(buf, size);
+
+fail:
+    memmgr_release(NULL, buf);
     return string_empty();
 }
 
@@ -29,7 +40,7 @@ void owl_compile_file(owl_context *ctx, const char *file_name)
         return;
     }
 
-    printf("compiling %s\n", file_name);
+    printf("compiling %s %zu\n", file_name, src.len);
 
     string_release(src);
 }

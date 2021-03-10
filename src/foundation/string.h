@@ -1,7 +1,7 @@
 #ifndef FOUNDATION_STRING_H
 #define FOUNDATION_STRING_H
 
-#include "foundation/lang.h"
+#include "foundation/memmgr.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -23,9 +23,14 @@ inline static string string_empty()
     return (string){.len = 0, .str = string_empty_buf};
 }
 
+inline static string string_of_len(char *str, size_t len)
+{
+    return (string){.len = len, .str = str};
+}
+
 inline static string string_of(char *str)
 {
-    return (string){.len = strlen(str), .str = str};
+    return string_of_len(str, strlen(str));
 }
 
 // Construct a string by making a copy.

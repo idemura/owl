@@ -2,15 +2,18 @@
 #define OWL_COMPILER_H
 
 #include "foundation/string.h"
+#include "foundation/vector.h"
+#include "owl/context.h"
+#include "owl/lexer.h"
 
-#include <stdio.h>
+bool owl_compile_file(owl_context *ctx, const char *file_name);
+bool owl_compile_string(owl_context *ctx, string code);
 
 typedef struct {
-    int n_errors;
-    FILE *f_out;
-} owl_context;
+    // Parent context
+    owl_context *ctx;
 
-void owl_init_context(owl_context *ctx);
-void owl_compile_file(owl_context *ctx, const char *file_name);
+    vector_owl_token tokens;
+} owl_parse_ctx;
 
 #endif

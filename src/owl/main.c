@@ -15,11 +15,15 @@ int main(int argc, char **argv)
     }
 
     owl_context ctx;
-    owl_init_context(&ctx);
+    owl_context_init(&ctx);
+
+    ctx.debug_lexer = true;
 
     for (int i = 1; i < argc; i++) {
         owl_compile_file(&ctx, argv[i]);
     }
+
+    owl_context_destroy(&ctx);
 
     return ctx.n_errors > 0 ? 1 : 0;
 }

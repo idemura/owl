@@ -36,6 +36,9 @@ inline static string string_of(char *str)
 // Construct a string by making a copy.
 string string_copy_of(const char *str);
 
+// Returns true if string equal to a string ending with 0.
+bool string_eq_sz(string s, const char *str);
+
 // Release string buffer.
 void string_release(string s);
 

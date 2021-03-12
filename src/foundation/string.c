@@ -17,3 +17,9 @@ void string_release(string s)
 {
     memmgr_release(NULL, s.str);
 }
+
+bool string_eq_sz(string s, const char *str)
+{
+    size_t len = strlen(str);
+    return s.len == len && memcmp(str, s.str, len) == 0;
+}

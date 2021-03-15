@@ -17,6 +17,11 @@ int main(int argc, char **argv)
     owl_context ctx;
     owl_context_init(&ctx);
 
+#ifndef NDEBUG
+    memmgr_ctx mmc = {};
+    ctx.mmc = &mmc;
+#endif
+
     ctx.debug_lexer = true;
 
     for (int i = 1; i < argc; i++) {

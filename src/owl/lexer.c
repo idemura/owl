@@ -5,6 +5,16 @@
 static owl_token_t owl_translate_word(string w)
 {
     switch (w.str[0]) {
+    case 'a':
+        if (string_eq_sz(w, "auto")) {
+            return OWL_KW_AUTO;
+        }
+        break;
+    case 'c':
+        if (string_eq_sz(w, "class")) {
+            return OWL_KW_CLASS;
+        }
+        break;
     case 'd':
         if (string_eq_sz(w, "do")) {
             return OWL_KW_DO;
@@ -16,8 +26,8 @@ static owl_token_t owl_translate_word(string w)
         }
         break;
     case 'f':
-        if (string_eq_sz(w, "fn")) {
-            return OWL_KW_FN;
+        if (string_eq_sz(w, "func")) {
+            return OWL_KW_FUNC;
         }
         break;
     case 'r':
@@ -26,6 +36,9 @@ static owl_token_t owl_translate_word(string w)
         }
         break;
     case 'v':
+        if (string_eq_sz(w, "value")) {
+            return OWL_KW_VALUE;
+        }
         if (string_eq_sz(w, "var")) {
             return OWL_KW_VAR;
         }
@@ -39,11 +52,14 @@ const char *owl_token_name(owl_token_t tok)
     // clang-format off
     static const char *names[OWL_TOKEN_SIZE] = {
             "<EOF>",
-            "id",
+            "ident",
+            "auto",
+            "class",
             "do",
             "if",
-            "fn",
+            "func",
             "return",
+            "value",
             "var",
             "number",
             "string",
@@ -56,6 +72,7 @@ const char *owl_token_name(owl_token_t tok)
             "','",
             "':'",
             "';'",
+            "'='",
     };
     // clang-format on
     return names[tok];
@@ -112,7 +129,12 @@ bool owl_tokenize(owl_context *ctx, string code, vector_owl_token *tokens)
             } while (i < code.len && isdigit(code.str[i]));
 
             if (i < code.len && isalpha(code.str[i])) {
-                owl_error_at(ctx, lnum, line_first - i + 1, "invalid character: ord=%d", chr);
+                owl_error_at(ctx,
+                        lnum,
+                        i - line_first + 1,
+                        "invalid character: '%c' ord=%d",
+                        (char) chr,
+                        chr);
                 return false;
             }
 
@@ -156,9 +178,17 @@ bool owl_tokenize(owl_context *ctx, string code, vector_owl_token *tokens)
             case ';':
                 t.tok = OWL_TOKEN_SEMICOLON;
                 break;
+            case '=':
+                t.tok = OWL_TOKEN_EQ;
+                break;
 
             default:
-                owl_error_at(ctx, lnum, line_first - i + 1, "invalid character: ord=%d", chr);
+                owl_error_at(ctx,
+                        lnum,
+                        i - line_first + 1,
+                        "invalid character: '%c' ord=%d",
+                        (char) chr,
+                        chr);
                 return false;
             }
 

@@ -6,14 +6,14 @@ void owl_context_init(owl_context *ctx)
     ctx->f_debug = stdout;
     ctx->n_errors = 0;
     ctx->file_name = NULL;
-    ctx->mmc = (memmgr_ctx){};
+    ctx->mmc = NULL;
     ctx->debug_lexer = false;
 }
 
 void owl_context_destroy(owl_context *ctx)
 {
-    if (ctx->mmc.n_allocs > 0) {
-        die("%ld allocations are not released", ctx->mmc.n_allocs);
+    if (ctx->mmc && ctx->mmc->n_allocs > 0) {
+        die("%ld allocations are not released", ctx->mmc->n_allocs);
     }
 }
 

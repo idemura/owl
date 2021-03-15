@@ -14,10 +14,13 @@ typedef enum {
 
     OWL_TOKEN_ID,
 
+    OWL_KW_AUTO,
+    OWL_KW_CLASS,
     OWL_KW_DO,
     OWL_KW_IF,
-    OWL_KW_FN,
+    OWL_KW_FUNC,
     OWL_KW_RETURN,
+    OWL_KW_VALUE,
     OWL_KW_VAR,
 
     OWL_TOKEN_NUMBER,
@@ -35,6 +38,7 @@ typedef enum {
     OWL_TOKEN_COMMA, // ,
     OWL_TOKEN_COLON, // :
     OWL_TOKEN_SEMICOLON, // ;
+    OWL_TOKEN_EQ, // =
 
     OWL_TOKEN_SIZE
 } owl_token_t;

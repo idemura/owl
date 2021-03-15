@@ -27,7 +27,12 @@ static bool check_charset(owl_context *ctx, string code)
             break;
         }
         if (!valid) {
-            owl_error_at(ctx, lnum, i - line_first + 1, "invalid character: ord=%d", (int) c);
+            owl_error_at(ctx,
+                    lnum,
+                    i - line_first + 1,
+                    "(charset check) invalid character: '%c' ord=%d",
+                    c,
+                    (int) c);
             return false;
         }
     }
@@ -46,7 +51,7 @@ static string read_file(owl_context *ctx, const char *file_name)
     long size = ftell(f);
     fseek(f, 0L, SEEK_SET);
 
-    char *buf = memmgr_allocate_dirty(MMC(ctx), size + 1);
+    char *buf = memmgr_allocate_dirty(ctx->mmc, size + 1);
     size_t read_size = fread(buf, 1, size, f);
     if (read_size != size) {
         owl_error(ctx, "failed to read file '%s': %zu size %zu\n", file_name, read_size, size);
@@ -57,7 +62,7 @@ static string read_file(owl_context *ctx, const char *file_name)
     return string_of_len(buf, size);
 
 fail:
-    memmgr_release(MMC(ctx), buf);
+    memmgr_release(ctx->mmc, buf);
     return string_empty();
 }
 
@@ -78,7 +83,7 @@ bool owl_compile_file(owl_context *ctx, const char *file_name)
     result = owl_compile_string(ctx, code);
 
 leave:
-    memmgr_release(MMC(ctx), code.str);
+    memmgr_release(ctx->mmc, code.str);
     ctx->file_name = NULL;
 
     return result;
@@ -89,7 +94,7 @@ bool owl_compile_string(owl_context *ctx, string code)
     bool result = false;
 
     vector_owl_token tokens;
-    vector_init_with_ctx(&tokens, MMC(ctx));
+    vector_init_with_ctx(&tokens, ctx->mmc);
 
     if (!owl_tokenize(ctx, code, &tokens)) {
         goto leave;

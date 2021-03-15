@@ -1,4 +1,11 @@
-fn main(): int
+class empty {}
+
+class pt2 {
+    var x = 0;
+    var y = 0;
+}
+
+func main(): int
 {
     # comment:
     # return 0;

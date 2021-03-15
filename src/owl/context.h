@@ -5,12 +5,6 @@
 
 #include <stdio.h>
 
-#ifdef NDEBUG
-#define MMC(ctx) NULL
-#else
-#define MMC(ctx) (&((ctx)->mmc))
-#endif
-
 typedef struct {
     FILE *f_error;
     FILE *f_debug;
@@ -18,11 +12,10 @@ typedef struct {
     int n_errors;
     const char *file_name;
 
-    memmgr_ctx mmc;
+    memmgr_ctx *mmc;
 
     // Parameters
     bool debug_lexer;
-
 } owl_context;
 
 void owl_context_init(owl_context *ctx);

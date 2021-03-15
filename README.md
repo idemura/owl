@@ -1,4 +1,4 @@
-# Owl Programming language
+# The Owl Programming language
 
 This is Owl programming language compiler. The goal of this project is mainly research at this point. Owl
 is unmanaged, statically typed procedural language that is very close to C and interoperates with it.

@@ -5,6 +5,10 @@
 #include "foundation/vector.h"
 #include "owl/context.h"
 
+/**
+ * Lexer. Converts text into a vector of tokens.
+ */
+
 typedef enum {
     OWL_TOKEN_EOF, // end-of-file
 
@@ -32,20 +36,20 @@ typedef enum {
     OWL_TOKEN_COLON, // :
     OWL_TOKEN_SEMICOLON, // ;
 
-    OWL_TOKEN_COUNT
-} owl_tok_type;
+    OWL_TOKEN_SIZE
+} owl_token_t;
 
 typedef struct {
-    owl_tok_type tok;
+    owl_token_t tok;
     int lnum;
     int cnum;
     string text;
 } owl_token;
 
-typedef def_vector_of(owl_token) vector_owl_token;
+typedef def_vector(owl_token) vector_owl_token;
 
-bool owl_parse(owl_context *ctx, string code, vector_owl_token *tokens);
-const char *owl_token_name(owl_tok_type tok);
+bool owl_tokenize(owl_context *ctx, string code, vector_owl_token *tokens);
+const char *owl_token_name(owl_token_t tok);
 void owl_print_token(owl_context *ctx, const owl_token *t);
 
 #endif

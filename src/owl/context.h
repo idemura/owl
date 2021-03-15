@@ -8,7 +8,7 @@
 #ifdef NDEBUG
 #define MMC(ctx) NULL
 #else
-#define MMC(ctx) (&(ctx)->mmc)
+#define MMC(ctx) (&((ctx)->mmc))
 #endif
 
 typedef struct {

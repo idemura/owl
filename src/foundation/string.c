@@ -8,6 +8,7 @@ string string_copy_of(const char *str)
 {
     string s;
     s.len = strlen(str);
+    assert(s.len < OWL_STRING_MAX);
     s.str = memmgr_allocate_dirty(NULL, pad_size_l(s.len + 1));
     memcpy(s.str, str, s.len + 1);
     return s;

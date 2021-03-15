@@ -1,5 +1,7 @@
 #include "owl/compiler.h"
 
+#include "owl/parser.h"
+
 // Check if we have a simple ASCII charset.
 static bool check_charset(owl_context *ctx, string code)
 {
@@ -89,7 +91,11 @@ bool owl_compile_string(owl_context *ctx, string code)
     vector_owl_token tokens;
     vector_init_with_ctx(&tokens, MMC(ctx));
 
-    if (!owl_parse(ctx, code, &tokens)) {
+    if (!owl_tokenize(ctx, code, &tokens)) {
+        goto leave;
+    }
+
+    if (!owl_parse(ctx, vector_ptr(&tokens, 0), vector_size(&tokens))) {
         goto leave;
     }
 

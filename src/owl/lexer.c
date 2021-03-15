@@ -2,7 +2,7 @@
 
 #include <ctype.h>
 
-static owl_tok_type owl_translate_word(string w)
+static owl_token_t owl_translate_word(string w)
 {
     switch (w.str[0]) {
     case 'd':
@@ -34,10 +34,10 @@ static owl_tok_type owl_translate_word(string w)
     return OWL_TOKEN_ID;
 }
 
-const char *owl_token_name(owl_tok_type tok)
+const char *owl_token_name(owl_token_t tok)
 {
     // clang-format off
-    static const char *names[OWL_TOKEN_COUNT] = {
+    static const char *names[OWL_TOKEN_SIZE] = {
             "<EOF>",
             "id",
             "do",
@@ -76,7 +76,7 @@ void owl_print_token(owl_context *ctx, const owl_token *t)
     fprintf(ctx->f_debug, "\n");
 }
 
-bool owl_parse(owl_context *ctx, string code, vector_owl_token *tokens)
+bool owl_tokenize(owl_context *ctx, string code, vector_owl_token *tokens)
 {
     int lnum = 1;
     size_t line_first = 0;
@@ -119,11 +119,11 @@ bool owl_parse(owl_context *ctx, string code, vector_owl_token *tokens)
             t.text = string_of_len(code.str + first, i - first);
             t.tok = OWL_TOKEN_NUMBER;
         } else {
+            bool comment = false;
+
             switch (chr) {
             case '#':
-                while (i < code.len && code.str[i] != '\n') {
-                    i++;
-                }
+                comment = true;
                 break;
 
             case '(':
@@ -161,6 +161,14 @@ bool owl_parse(owl_context *ctx, string code, vector_owl_token *tokens)
                 owl_error_at(ctx, lnum, line_first - i + 1, "invalid character: ord=%d", chr);
                 return false;
             }
+
+            if (comment) {
+                while (i < code.len && code.str[i] != '\n') {
+                    i++;
+                }
+                continue;
+            }
+
             i++;
         }
 

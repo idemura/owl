@@ -2,7 +2,7 @@
 
 #include <gtest/gtest.h>
 
-typedef def_vector_of(int) vector_int;
+typedef def_vector(int) vector_int;
 
 TEST(vector, basic_ops)
 {

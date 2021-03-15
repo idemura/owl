@@ -11,6 +11,10 @@ extern "C" {
  * Dynamically allocated string
  */
 
+// String length must fit into int type range, because of %.*s format. We have limit of 16MB on
+// string:
+#define OWL_STRING_MAX ((size_t) 1u << 24)
+
 typedef struct {
     size_t len;
     char *str;
@@ -25,6 +29,7 @@ inline static string string_empty()
 
 inline static string string_of_len(char *str, size_t len)
 {
+    assert(len < OWL_STRING_MAX);
     return (string){.len = len, .str = str};
 }
 

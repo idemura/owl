@@ -19,8 +19,8 @@ typedef struct {
     void *array;
 } vector;
 
-#define def_vector_of(T) \
-    struct vector_##T { \
+#define def_vector(T) \
+    struct { \
         size_t size; \
         size_t capacity; \
         memmgr_ctx *mmc; \

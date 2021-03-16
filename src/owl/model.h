@@ -19,24 +19,30 @@ typedef enum {
 
 typedef struct {
     owl_node_t type;
+    int lnum;
+    int cnum;
+} owl_node_header;
+
+typedef struct {
+    owl_node_header head;
 
     string name;
 } owl_function;
 
 typedef struct {
-    owl_node_t type;
+    owl_node_header head;
 
     string name;
 } owl_variable;
 
 typedef struct {
-    owl_node_t type;
+    owl_node_header head;
 
     string name;
 } owl_class;
 
 typedef struct {
-    owl_node_t type;
+    owl_node_header head;
 
     string name;
 } owl_value;
@@ -47,7 +53,7 @@ typedef def_vector(owl_class *) vector_owl_class;
 typedef def_vector(owl_value *) vector_owl_value;
 
 typedef struct {
-    owl_node_t type;
+    owl_node_header head;
 
     vector_owl_function v_function;
     vector_owl_variable v_variable;

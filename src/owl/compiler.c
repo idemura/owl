@@ -100,7 +100,8 @@ bool owl_compile_string(owl_context *ctx, string code)
         goto leave;
     }
 
-    if (!owl_parse(ctx, vector_ptr(&tokens, 0), vector_size(&tokens))) {
+    owl_unit *unit = owl_parse(ctx, vector_ptr(&tokens, 0), vector_size(&tokens));
+    if (unit == NULL) {
         goto leave;
     }
 

@@ -70,16 +70,27 @@ typedef struct {
         /* return */ _v->size; \
     })
 
-// Add value to the end of the vector @v n times.
-#define vector_add_n(v, val, n) \
+// Add a value to the end n times (replicate).
+#define vector_add_rep(v, val, n) \
     ({ \
         __typeof__(v) _v = v; \
         size_t _n = n; \
-        __typeof__(sizeof(*_v->array)) _a = val; \
         vector_increase_capacity((vector *) _v, sizeof(*_v->array), _v->size + _n); \
+        __typeof__(sizeof(*_v->array)) _a = val; \
         for (size_t _i = 0; _i < _n; ++_i) { \
             _v->array[_v->size + _i] = _a; \
         } \
+        _v->size += _n; \
+        /* return */ _v->size; \
+    })
+
+// Add a list of value to the end
+#define vector_add_arr(v, ptr, n) \
+    ({ \
+        __typeof__(v) _v = v; \
+        size_t _n = n; \
+        vector_increase_capacity((vector *) _v, sizeof(*_v->array), _v->size + _n); \
+        memcpy(_v->array + _v->size, (ptr), sizeof(*_v->array) * _n); \
         _v->size += _n; \
         /* return */ _v->size; \
     })

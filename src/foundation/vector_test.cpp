@@ -98,7 +98,7 @@ TEST(vector, basic_ops)
     EXPECT_EQ(0, mmc.n_allocs);
 }
 
-TEST(vector, add_n)
+TEST(vector, add_rep)
 {
     memmgr_ctx mmc{};
 
@@ -107,13 +107,41 @@ TEST(vector, add_n)
     EXPECT_EQ(3, v.capacity);
     EXPECT_EQ(0, vector_size(&v));
 
-    vector_add_n(&v, 10, 5);
+    vector_add_rep(&v, 10, 5);
 
     EXPECT_EQ(10, vector_get(&v, 0));
     EXPECT_EQ(10, vector_get(&v, 1));
     EXPECT_EQ(10, vector_get(&v, 2));
     EXPECT_EQ(10, vector_get(&v, 3));
     EXPECT_EQ(10, vector_get(&v, 4));
+
+    EXPECT_EQ(8, v.capacity);
+    EXPECT_EQ(5, vector_size(&v));
+
+    EXPECT_EQ(1, mmc.n_allocs);
+    vector_release(&v);
+    EXPECT_EQ(0, mmc.n_allocs);
+}
+
+TEST(vector, add_arr)
+{
+    memmgr_ctx mmc{};
+
+    vector_int v;
+    vector_init_capacity_with_ctx(&v, 3, &mmc);
+    EXPECT_EQ(3, v.capacity);
+    EXPECT_EQ(0, vector_size(&v));
+
+    vector_add(&v, 10);
+
+    int a[] = {11, 12, 13, 14};
+    vector_add_arr(&v, a, array_sizeof(a));
+
+    EXPECT_EQ(10, vector_get(&v, 0));
+    EXPECT_EQ(11, vector_get(&v, 1));
+    EXPECT_EQ(12, vector_get(&v, 2));
+    EXPECT_EQ(13, vector_get(&v, 3));
+    EXPECT_EQ(14, vector_get(&v, 4));
 
     EXPECT_EQ(8, v.capacity);
     EXPECT_EQ(5, vector_size(&v));

@@ -1,8 +1,8 @@
-#ifndef OWL_MODEL_H
-#define OWL_MODEL_H
+#ifndef OWL_MODEL_HPP
+#define OWL_MODEL_HPP
 
-#include "foundation/string.h"
-#include "foundation/vector.h"
+#include <string>
+#include <vector>
 
 #define OWL_MAX_ARGS 80
 #define OWL_MAX_FIELDS 4096
@@ -10,6 +10,8 @@
 /**
  * Model. Parse tree nodes.
  */
+
+namespace owl {
 
 typedef enum {
     OWL_MN_FUNCTION,
@@ -137,5 +139,7 @@ typedef struct {
     vector_owl_object v_object;
     vector_owl_struct v_struct;
 } owl_unit;
+
+}
 
 #endif

@@ -1,4 +1,6 @@
-#include "owl/parser.h"
+#include "owl/parser.hpp"
+
+namespace owl {
 
 typedef struct {
     owl_context *parent_ctx;
@@ -362,4 +364,6 @@ void owl_destroy_unit(owl_context *ctx, owl_unit *unit)
     vector_release(&unit->v_struct);
 
     memmgr_release(ctx->mmc, unit);
+}
+
 }

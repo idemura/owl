@@ -1,6 +1,8 @@
-#include "owl/lexer.h"
+#include "owl/lexer.hpp"
 
 #include <ctype.h>
+
+namespace owl {
 
 static owl_token_t owl_translate_word(string w)
 {
@@ -219,4 +221,6 @@ bool owl_tokenize(owl_context *ctx, string code, vector_owl_token *tokens)
     vector_add(tokens, t_eof);
 
     return true;
+}
+
 }

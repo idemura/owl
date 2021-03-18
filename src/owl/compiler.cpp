@@ -1,6 +1,8 @@
-#include "owl/compiler.h"
+#include "owl/compiler.hpp"
 
-#include "owl/parser.h"
+#include "owl/parser.hpp"
+
+namespace owl {
 
 // Check if we have a simple ASCII charset.
 static bool check_charset(owl_context *ctx, string code)
@@ -108,4 +110,6 @@ bool owl_compile_string(owl_context *ctx, string code)
     vector_release(&tokens);
 
     return result;
+}
+
 }

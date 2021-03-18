@@ -1,13 +1,15 @@
-#ifndef OWL_LEXER_H
-#define OWL_LEXER_H
+#ifndef OWL_LEXER_HPP
+#define OWL_LEXER_HPP
 
-#include "foundation/string.h"
-#include "foundation/vector.h"
-#include "owl/context.h"
+#include <string>
+#include <vector>
+#include "owl/context.hpp"
 
 /**
  * Lexer. Converts text into a vector of tokens.
  */
+
+namespace owl {
 
 typedef enum {
     OWL_TOKEN_EOF, // end-of-file
@@ -55,5 +57,7 @@ typedef def_vector(owl_token) vector_owl_token;
 bool owl_tokenize(owl_context *ctx, string code, vector_owl_token *tokens);
 const char *owl_token_name(owl_token_t tok);
 void owl_print_token(owl_context *ctx, const owl_token *t);
+
+}
 
 #endif

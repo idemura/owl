@@ -1,4 +1,6 @@
-#include "owl/context.h"
+#include "owl/context.hpp"
+
+namespace owl {
 
 void owl_context_init(owl_context *ctx)
 {
@@ -51,4 +53,6 @@ void owl_error(owl_context *ctx, const char *format, ...)
     va_start(va, format);
     owl_error_va(ctx, 0, 0, format, va);
     va_end(va);
+}
+
 }

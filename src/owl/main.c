@@ -22,7 +22,7 @@ int main(int argc, char **argv)
     ctx.mmc = &mmc;
 #endif
 
-    ctx.debug_lexer = true;
+    // ctx.debug_lexer = true;
 
     for (int i = 1; i < argc; i++) {
         owl_compile_file(&ctx, argv[i]);

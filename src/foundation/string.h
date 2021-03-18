@@ -40,6 +40,9 @@ inline static string string_of(char *str)
 
 // Construct a string by making a copy.
 string string_copy_of(const char *str);
+string string_copy_of_len(const char *str, size_t len);
+
+string string_dup(string s);
 
 // Returns true if string equal to a string ending with 0.
 bool string_eq_sz(string s, const char *str);

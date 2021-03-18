@@ -1,12 +1,18 @@
-class empty {}
+object empty {}
 
-class pt2 {
-    var x = 0;
-    var y;
+object pt2d {
+    var x1 = 0;
+    var y2;
+    auto var x2 = 0;
+    auto var y1;
 }
 
+func f1() {
+    # empty
+}
+
+# entry point
 func main(): int
 {
-    # comment:
     # return 0;
 }

@@ -10,11 +10,6 @@ static owl_token_t owl_translate_word(string w)
             return OWL_KW_AUTO;
         }
         break;
-    case 'c':
-        if (string_eq_sz(w, "class")) {
-            return OWL_KW_CLASS;
-        }
-        break;
     case 'd':
         if (string_eq_sz(w, "do")) {
             return OWL_KW_DO;
@@ -30,15 +25,21 @@ static owl_token_t owl_translate_word(string w)
             return OWL_KW_FUNC;
         }
         break;
+    case 'o':
+        if (string_eq_sz(w, "object")) {
+            return OWL_KW_OBJECT;
+        }
+        break;
     case 'r':
         if (string_eq_sz(w, "return")) {
             return OWL_KW_RETURN;
         }
         break;
-    case 'v':
-        if (string_eq_sz(w, "value")) {
-            return OWL_KW_VALUE;
+    case 's':
+        if (string_eq_sz(w, "struct")) {
+            return OWL_KW_STRUCT;
         }
+    case 'v':
         if (string_eq_sz(w, "var")) {
             return OWL_KW_VAR;
         }
@@ -54,12 +55,12 @@ const char *owl_token_name(owl_token_t tok)
             "<EOF>",
             "ident",
             "auto",
-            "class",
             "do",
             "if",
             "func",
+            "object",
             "return",
-            "value",
+            "struct",
             "var",
             "number",
             "string",

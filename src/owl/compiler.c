@@ -96,18 +96,16 @@ bool owl_compile_string(owl_context *ctx, string code)
     vector_owl_token tokens;
     vector_init_with_ctx(&tokens, ctx->mmc);
 
-    if (!owl_tokenize(ctx, code, &tokens)) {
-        goto leave;
+    owl_unit *unit = NULL;
+    if (owl_tokenize(ctx, code, &tokens)) {
+        unit = owl_parse(ctx, vector_ptr(&tokens, 0), vector_size(&tokens));
+        if (unit) {
+            result = true;
+        }
     }
 
-    owl_unit *unit = owl_parse(ctx, vector_ptr(&tokens, 0), vector_size(&tokens));
-    if (unit == NULL) {
-        goto leave;
-    }
-
-    result = true;
-
-leave:
+    owl_destroy_unit(ctx, unit);
     vector_release(&tokens);
+
     return result;
 }

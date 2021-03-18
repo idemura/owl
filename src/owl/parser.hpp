@@ -11,7 +11,6 @@
 namespace owl {
 
 mod_unit *parse(context *ctx, const token *p_tokens, size_t n_tokens);
-void destroy_unit(context *ctx, mod_unit *unit);
 
 }
 

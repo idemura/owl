@@ -1,5 +1,7 @@
 #include "owl/parser.hpp"
 
+#include <memory>
+
 namespace owl {
 
 struct parse_ctx {
@@ -83,7 +85,9 @@ static mod_function *parse_function(parse_ctx *ctx)
         return nullptr;
     }
 
-    const token *t_id = t;
+    auto *e = new mod_function();
+    set_node(e, t);
+    e->name = std::string(t->text);
 
     if ((t = take_token(ctx))->tok != TOKEN_LPAREN) {
         compiler_error_at(ctx->parent_ctx,
@@ -91,6 +95,7 @@ static mod_function *parse_function(parse_ctx *ctx)
                 t->cnum,
                 "function argument list: expected '(', found %s",
                 token_name(t->tok));
+        destroy_rec(e);
         return nullptr;
     }
 
@@ -102,14 +107,15 @@ static mod_function *parse_function(parse_ctx *ctx)
                 t->cnum,
                 "function argument list: expected ')', found %s",
                 token_name(t->tok));
+        destroy_rec(e);
         return nullptr;
     }
 
-    const mod_type *data_type = nullptr;
     if ((t = peek_token(ctx))->tok == TOKEN_COLON) {
         ctx->curr++;
-        data_type = parse_type(ctx);
-        if (!data_type) {
+        e->data_type = parse_type(ctx);
+        if (!e->data_type) {
+            destroy_rec(e);
             return nullptr;
         }
     }
@@ -120,6 +126,7 @@ static mod_function *parse_function(parse_ctx *ctx)
                 t->cnum,
                 "function: expected '{', found %s",
                 token_name(t->tok));
+        destroy_rec(e);
         return nullptr;
     }
 
@@ -129,14 +136,11 @@ static mod_function *parse_function(parse_ctx *ctx)
                 t->cnum,
                 "function: expected '}', found %s",
                 token_name(t->tok));
+        destroy_rec(e);
         return nullptr;
     }
 
-    auto *e = new mod_function();
-    set_node(e, t_id);
-    e->name = std::string(t_id->text);
-
-    printf("function: %.*s\n", (int) t_id->text.size(), t_id->text.data());
+    printf("function: %s\n", e->name.data());
     return e;
 }
 
@@ -164,24 +168,27 @@ static mod_variable *parse_variable(parse_ctx *ctx)
         return nullptr;
     }
 
-    const token *t_id = t;
+    auto *e = new mod_variable();
+    set_node(e, t);
+    e->name = std::string(t->text);
+    e->auto_var = auto_var;
 
     // Optional type
-    mod_type *data_type = nullptr;
     if ((t = peek_token(ctx))->tok == TOKEN_COLON) {
         ctx->curr++;
-        data_type = parse_type(ctx);
-        if (!data_type) {
+        e->data_type = parse_type(ctx);
+        if (!e->data_type) {
+            destroy_rec(e);
             return nullptr;
         }
     }
 
     // Optional initializer
-    mod_expr *init = nullptr;
     if ((t = peek_token(ctx))->tok == TOKEN_EQ) {
         ctx->curr++;
-        init = parse_expr(ctx);
-        if (!init) {
+        e->init_expr = parse_expr(ctx);
+        if (!e->init_expr) {
+            destroy_rec(e);
             return nullptr;
         }
     }
@@ -192,17 +199,11 @@ static mod_variable *parse_variable(parse_ctx *ctx)
                 t->cnum,
                 "variable: ';' expected, found %s",
                 token_name(t->tok));
+        destroy_rec(e);
         return nullptr;
     }
 
-    auto *e = new mod_variable();
-    set_node(e, t_id);
-    e->name = std::string(t_id->text);
-    e->data_type = data_type;
-    e->init = init;
-    e->auto_var = auto_var;
-
-    printf("variable: %.*s\n", (int) t_id->text.size(), t_id->text.data());
+    printf("variable: %s\n", e->name.data());
     return e;
 }
 
@@ -224,7 +225,9 @@ static mod_object *parse_object_def(parse_ctx *ctx)
         return nullptr;
     }
 
-    const token *t_id = t;
+    auto *e = new mod_object();
+    set_node(e, t);
+    e->name = std::string(t->text);
 
     if ((t = take_token(ctx))->tok != TOKEN_LCURLY) {
         compiler_error_at(ctx->parent_ctx,
@@ -232,15 +235,17 @@ static mod_object *parse_object_def(parse_ctx *ctx)
                 t->cnum,
                 "object: expected '{', found %s",
                 token_name(t->tok));
+        destroy_rec(e);
         return nullptr;
     }
 
     while (peek_token(ctx)->tok != TOKEN_RCURLY) {
-        auto *field = parse_variable(ctx);
-        if (!field) {
+        auto *f = parse_variable(ctx);
+        if (!f) {
+            destroy_rec(e);
             return nullptr;
         }
-        printf("field: %.*s\n", (int) field->name.size(), field->name.data());
+        e->fields.push_back(f);
     }
 
     if ((t = take_token(ctx))->tok != TOKEN_RCURLY) {
@@ -249,14 +254,11 @@ static mod_object *parse_object_def(parse_ctx *ctx)
                 t->cnum,
                 "object: expected '}', found %s",
                 token_name(t->tok));
+        destroy_rec(e);
         return nullptr;
     }
 
-    auto *e = new mod_object();
-    set_node(e, t_id);
-    e->name = std::string(t_id->text);
-
-    printf("object: %.*s\n", (int) t_id->text.size(), t_id->text.data());
+    printf("object: %s\n", e->name.data());
     return e;
 }
 
@@ -276,7 +278,7 @@ static bool parse_top_level_def(parse_ctx *ctx, mod_unit *unit)
     case KW_FUNC: {
         auto *e = parse_function(ctx);
         if (e) {
-            unit->v_function.push_back(e);
+            unit->functions.push_back(e);
         }
         return e != nullptr;
     }
@@ -284,7 +286,7 @@ static bool parse_top_level_def(parse_ctx *ctx, mod_unit *unit)
     case KW_VAR: {
         auto *e = parse_variable(ctx);
         if (e) {
-            unit->v_variable.push_back(e);
+            unit->variables.push_back(e);
         }
         return e != nullptr;
     }
@@ -292,7 +294,7 @@ static bool parse_top_level_def(parse_ctx *ctx, mod_unit *unit)
     case KW_OBJECT: {
         auto *e = parse_object_def(ctx);
         if (e) {
-            unit->v_object.push_back(e);
+            unit->objects.push_back(e);
         }
         return e != nullptr;
     }
@@ -309,19 +311,19 @@ static bool parse_top_level_def(parse_ctx *ctx, mod_unit *unit)
 
 static mod_unit *parse_unit(parse_ctx *ctx)
 {
-    auto *unit = new mod_unit();
+    auto *e = new mod_unit();
 
     const token *t = peek_token(ctx);
-    while (t->tok != TOKEN_EOF && parse_top_level_def(ctx, unit)) {
+    while (t->tok != TOKEN_EOF && parse_top_level_def(ctx, e)) {
         t = peek_token(ctx);
     }
 
     if (t->tok != TOKEN_EOF) {
-        delete unit;
+        destroy_rec(e);
         return nullptr;
     }
 
-    return unit;
+    return e;
 }
 
 mod_unit *parse(context *ctx, const token *p_tokens, size_t n_tokens)
@@ -333,15 +335,6 @@ mod_unit *parse(context *ctx, const token *p_tokens, size_t n_tokens)
     parse_ctx.curr = 0;
 
     return parse_unit(&parse_ctx);
-}
-
-void destroy_unit(context *ctx, mod_unit *unit)
-{
-    if (!unit) {
-        return;
-    }
-
-    // TODO: Visit and delete
 }
 
 }

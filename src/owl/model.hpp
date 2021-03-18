@@ -5,11 +5,8 @@
 #include <string_view>
 #include <vector>
 
-#define OWL_MAX_ARGS 80
-#define OWL_MAX_FIELDS 4096
-
 /**
- * Model. Parse tree nodes.
+ * Model nodes. Model is a graph representing parsed program.
  */
 
 namespace owl {
@@ -20,7 +17,6 @@ enum mod_node_t {
     MOD_VARIABLE,
     MOD_OBJECT,
     MOD_STRUCT,
-    MOD_TYPE_DEF,
     MOD_TYPE,
     MOD_EXPR,
     MOD_UNIT,
@@ -37,19 +33,20 @@ struct mod_node {
     int cnum = 0;
     std::string_view text;
 
-    mod_node(mod_node_t t): type{t} {}
+    explicit mod_node(mod_node_t t): type{t} {}
+    virtual ~mod_node() = default;
+
+    virtual void destroy_rec() { delete this; }
 };
 
 /**
  * Type definition.
  */
-struct mod_type_def: mod_node {
+struct type_definition {
     std::string name;
 
     bool is_builtin = false;
     bool is_ref = false;
-
-    mod_type_def(): mod_node(MOD_TYPE_DEF) {}
 };
 
 /**
@@ -57,7 +54,7 @@ struct mod_type_def: mod_node {
  */
 struct mod_type: mod_node {
     std::string name;
-    mod_type_def *type_def = nullptr;
+    type_definition *type_def = nullptr;
 
     mod_type(): mod_node(MOD_TYPE) {}
 };
@@ -66,9 +63,10 @@ struct mod_type: mod_node {
  * Base of every mod_expr_* data structure
  */
 struct mod_expr: mod_node {
-    mod_type data_type;
+    mod_type *data_type = nullptr;
 
     mod_expr(): mod_node(MOD_EXPR) {}
+    void destroy_rec() override;
 };
 
 /**
@@ -76,8 +74,10 @@ struct mod_expr: mod_node {
  */
 struct mod_function: mod_node {
     std::string name;
+    mod_type *data_type = nullptr;
 
     mod_function(): mod_node(MOD_FUNCTION) {}
+    void destroy_rec() override;
 };
 
 /**
@@ -87,11 +87,12 @@ struct mod_variable: mod_node {
     std::string name;
 
     mod_type *data_type = nullptr;
-    mod_expr *init = nullptr;
+    mod_expr *init_expr = nullptr;
 
     bool auto_var = false;
 
     mod_variable(): mod_node(MOD_VARIABLE) {}
+    void destroy_rec() override;
 };
 
 /**
@@ -99,8 +100,10 @@ struct mod_variable: mod_node {
  */
 struct mod_object: mod_node {
     std::string name;
+    std::vector<mod_variable *> fields;
 
     mod_object(): mod_node(MOD_OBJECT) {}
+    void destroy_rec() override;
 };
 
 /**
@@ -110,6 +113,7 @@ struct mod_struct: mod_node {
     std::string name;
 
     mod_struct(): mod_node(MOD_STRUCT) {}
+    void destroy_rec() override;
 };
 
 /**
@@ -118,6 +122,8 @@ struct mod_struct: mod_node {
 struct mod_expr_func: mod_expr {
     std::string name;
     std::vector<mod_variable *> args;
+
+    void destroy_rec() override;
 };
 
 /**
@@ -128,13 +134,16 @@ struct mod_expr_value: mod_expr {
 };
 
 struct mod_unit: mod_node {
-    std::vector<mod_function *> v_function;
-    std::vector<mod_variable *> v_variable;
-    std::vector<mod_object *> v_object;
-    std::vector<mod_struct *> v_struct;
+    std::vector<mod_function *> functions;
+    std::vector<mod_variable *> variables;
+    std::vector<mod_object *> objects;
+    std::vector<mod_struct *> structs;
 
     mod_unit(): mod_node(MOD_UNIT) {}
+    void destroy_rec() override;
 };
+
+void destroy_rec(mod_node *node);
 
 }
 

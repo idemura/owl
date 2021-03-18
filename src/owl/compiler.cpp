@@ -91,7 +91,8 @@ bool compile_string(context *ctx, std::string_view code)
         }
     }
 
-    destroy_unit(ctx, unit);
+    destroy_rec(unit);
+
     return result;
 }
 

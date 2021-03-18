@@ -10,8 +10,8 @@
 
 namespace owl {
 
-owl_unit *owl_parse(owl_context *ctx, const owl_token *p_tokens, size_t n_tokens);
-void owl_destroy_unit(owl_context *ctx, owl_unit *unit);
+mod_unit *parse(context *ctx, const token *p_tokens, size_t n_tokens);
+void destroy_unit(context *ctx, mod_unit *unit);
 
 }
 

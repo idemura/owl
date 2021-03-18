@@ -5,13 +5,13 @@
 namespace owl {
 
 // Check if we have a simple ASCII charset.
-static bool check_charset(owl_context *ctx, string code)
+static bool check_charset(context *ctx, std::string_view code)
 {
     int lnum = 1;
     size_t line_first = 0;
-    for (size_t i = 0; i < code.len; i++) {
+    for (size_t i = 0; i < code.size(); i++) {
         bool valid = true;
-        char c = code.str[i];
+        char c = code[i];
         switch (c) {
         case '\n':
             lnum++;
@@ -29,7 +29,7 @@ static bool check_charset(owl_context *ctx, string code)
             break;
         }
         if (!valid) {
-            owl_error_at(ctx,
+            compiler_error_at(ctx,
                     lnum,
                     i - line_first + 1,
                     "(charset check) invalid character: '%c' ord=%d",
@@ -41,74 +41,57 @@ static bool check_charset(owl_context *ctx, string code)
     return true;
 }
 
-static string read_file(owl_context *ctx, const char *file_name)
+static std::string read_file(context *ctx, const char *file_name)
 {
-    FILE *f = fopen(file_name, "rt");
+    auto *f = fopen(file_name, "rt");
     if (!f) {
-        owl_error(ctx, "failed to open file '%s'\n", file_name);
-        return string_empty();
+        compiler_error(ctx, "failed to open file '%s'\n", file_name);
+        return std::string();
     }
 
     fseek(f, 0L, SEEK_END);
     long size = ftell(f);
     fseek(f, 0L, SEEK_SET);
 
-    char *buf = memmgr_allocate_dirty(ctx->mmc, size + 1);
-    size_t read_size = fread(buf, 1, size, f);
+    auto buf = std::string(size, ' ');
+    size_t read_size = fread(buf.data(), 1, size, f);
     if (read_size != size) {
-        owl_error(ctx, "failed to read file '%s': %zu size %zu\n", file_name, read_size, size);
-        goto fail;
+        compiler_error(ctx, "failed to read file '%s': %zu size %zu\n", file_name, read_size, size);
+        return std::string();
     }
 
-    buf[size] = 0;
-    return string_of_len(buf, size);
-
-fail:
-    memmgr_release(ctx->mmc, buf);
-    return string_empty();
+    return buf;
 }
 
-bool owl_compile_file(owl_context *ctx, const char *file_name)
+bool compile_file(context *ctx, const char *file_name)
 {
-    bool result = false;
-
-    string code = read_file(ctx, file_name);
-    if (code.len == 0) {
-        goto leave;
+    std::string code = read_file(ctx, file_name);
+    if (code.empty()) {
+        return false;
     }
 
-    ctx->file_name = file_name;
+    ctx->file_name = std::string(file_name);
     if (!check_charset(ctx, code)) {
-        goto leave;
+        return false;
     }
 
-    result = owl_compile_string(ctx, code);
-
-leave:
-    memmgr_release(ctx->mmc, code.str);
-    ctx->file_name = NULL;
-
-    return result;
+    return compile_string(ctx, code);
 }
 
-bool owl_compile_string(owl_context *ctx, string code)
+bool compile_string(context *ctx, std::string_view code)
 {
     bool result = false;
+    std::vector<token> tokens;
 
-    vector_owl_token tokens;
-    vector_init_with_ctx(&tokens, ctx->mmc);
-
-    owl_unit *unit = NULL;
-    if (owl_tokenize(ctx, code, &tokens)) {
-        unit = owl_parse(ctx, vector_ptr(&tokens, 0), vector_size(&tokens));
+    mod_unit *unit = nullptr;
+    if (tokenize(ctx, code, &tokens)) {
+        unit = parse(ctx, tokens.data(), tokens.size());
         if (unit) {
             result = true;
         }
     }
 
-    owl_destroy_unit(ctx, unit);
-    vector_release(&tokens);
-
+    destroy_unit(ctx, unit);
     return result;
 }
 

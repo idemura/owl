@@ -1,20 +1,10 @@
 cc_common = -Wall -Werror -Wno-unused-function -march=native -I. -fPIC
 
-c_compiler = clang
-c_flags = --std=c17 $cc_common
-c_extra =
-
 cpp_compiler = clang++
 cpp_flags = --std=c++17 $cc_common -fno-rtti -fno-exceptions
 cpp_extra =
 
 libs =
-
-rule compile_c
-    deps = gcc
-    depfile = $out.d
-    command = $c_compiler -MD -MF $out.d $c_flags $c_extra $cc_opt -c $in -o $out
-    description = Compile C
 
 rule compile_cpp
     deps = gcc

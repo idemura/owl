@@ -4,56 +4,56 @@
 
 namespace owl {
 
-static owl_token_t owl_translate_word(string w)
+static token_t translate_word(std::string_view w)
 {
-    switch (w.str[0]) {
+    switch (w[0]) {
     case 'a':
-        if (string_eq_sz(w, "auto")) {
-            return OWL_KW_AUTO;
+        if (w == "auto") {
+            return KW_AUTO;
         }
         break;
     case 'd':
-        if (string_eq_sz(w, "do")) {
-            return OWL_KW_DO;
+        if (w == "do") {
+            return KW_DO;
         }
         break;
     case 'i':
-        if (string_eq_sz(w, "if")) {
-            return OWL_KW_IF;
+        if (w == "if") {
+            return KW_IF;
         }
         break;
     case 'f':
-        if (string_eq_sz(w, "func")) {
-            return OWL_KW_FUNC;
+        if (w == "func") {
+            return KW_FUNC;
         }
         break;
     case 'o':
-        if (string_eq_sz(w, "object")) {
-            return OWL_KW_OBJECT;
+        if (w == "object") {
+            return KW_OBJECT;
         }
         break;
     case 'r':
-        if (string_eq_sz(w, "return")) {
-            return OWL_KW_RETURN;
+        if (w == "return") {
+            return KW_RETURN;
         }
         break;
     case 's':
-        if (string_eq_sz(w, "struct")) {
-            return OWL_KW_STRUCT;
+        if (w == "struct") {
+            return KW_STRUCT;
         }
     case 'v':
-        if (string_eq_sz(w, "var")) {
-            return OWL_KW_VAR;
+        if (w == "var") {
+            return KW_VAR;
         }
         break;
     }
-    return OWL_TOKEN_ID;
+    return TOKEN_ID;
 }
 
-const char *owl_token_name(owl_token_t tok)
+const char *token_name(token_t tok)
 {
     // clang-format off
-    static const char *names[OWL_TOKEN_SIZE] = {
+    static const char *names[TOKEN_SIZE] = {
             "<EOF>",
             "ident",
             "auto",
@@ -81,14 +81,14 @@ const char *owl_token_name(owl_token_t tok)
     return names[tok];
 }
 
-void owl_print_token(owl_context *ctx, const owl_token *t)
+void print_token(context *ctx, const token &t)
 {
-    fprintf(ctx->f_debug, "%s @%i, %i", owl_token_name(t->tok), t->lnum, t->cnum);
-    switch (t->tok) {
-    case OWL_TOKEN_ID:
-    case OWL_TOKEN_NUMBER:
-    case OWL_TOKEN_STRING:
-        fprintf(ctx->f_debug, ": %.*s", (int) t->text.len, t->text.str);
+    fprintf(ctx->f_debug, "%s @%i, %i", token_name(t.tok), t.lnum, t.cnum);
+    switch (t.tok) {
+    case TOKEN_ID:
+    case TOKEN_NUMBER:
+    case TOKEN_STRING:
+        fprintf(ctx->f_debug, ": %.*s", (int) t.text.size(), t.text.data());
         break;
     default:
         break;
@@ -96,12 +96,12 @@ void owl_print_token(owl_context *ctx, const owl_token *t)
     fprintf(ctx->f_debug, "\n");
 }
 
-bool owl_tokenize(owl_context *ctx, string code, vector_owl_token *tokens)
+bool tokenize(context *ctx, std::string_view code, std::vector<token> *tokens)
 {
     int lnum = 1;
     size_t line_first = 0;
-    for (size_t i = 0; i < code.len;) {
-        int chr = code.str[i];
+    for (size_t i = 0; i < code.size();) {
+        int chr = code[i];
         if (isspace(chr)) {
             if (chr == '\n') {
                 lnum++;
@@ -111,28 +111,23 @@ bool owl_tokenize(owl_context *ctx, string code, vector_owl_token *tokens)
             continue;
         }
 
-        owl_token t = {
-                .tok = OWL_TOKEN_EOF,
-                .lnum = lnum,
-                .cnum = (int) (i - line_first + 1),
-                .text = string_empty(),
-        };
+        token t;
 
         const size_t first = i;
         if (chr == '_' || isalpha(chr)) {
             do {
                 i++;
-            } while (i < code.len && (chr == '_' || isalnum(code.str[i])));
+            } while (i < code.size() && (chr == '_' || isalnum(code[i])));
 
-            t.text = string_of_len(code.str + first, i - first);
-            t.tok = owl_translate_word(t.text);
+            t.text = code.substr(first, i - first);
+            t.tok = translate_word(t.text);
         } else if (isdigit(chr)) {
             do {
                 i++;
-            } while (i < code.len && isdigit(code.str[i]));
+            } while (i < code.size() && isdigit(code[i]));
 
-            if (i < code.len && isalpha(code.str[i])) {
-                owl_error_at(ctx,
+            if (i < code.size() && isalpha(code[i])) {
+                compiler_error_at(ctx,
                         lnum,
                         i - line_first + 1,
                         "invalid character: '%c' ord=%d",
@@ -141,8 +136,8 @@ bool owl_tokenize(owl_context *ctx, string code, vector_owl_token *tokens)
                 return false;
             }
 
-            t.text = string_of_len(code.str + first, i - first);
-            t.tok = OWL_TOKEN_NUMBER;
+            t.text = code.substr(first, i - first);
+            t.tok = TOKEN_NUMBER;
         } else {
             bool comment = false;
 
@@ -152,41 +147,41 @@ bool owl_tokenize(owl_context *ctx, string code, vector_owl_token *tokens)
                 break;
 
             case '(':
-                t.tok = OWL_TOKEN_LPAREN;
+                t.tok = TOKEN_LPAREN;
                 break;
             case ')':
-                t.tok = OWL_TOKEN_RPAREN;
+                t.tok = TOKEN_RPAREN;
                 break;
 
             case '{':
-                t.tok = OWL_TOKEN_LCURLY;
+                t.tok = TOKEN_LCURLY;
                 break;
             case '}':
-                t.tok = OWL_TOKEN_RCURLY;
+                t.tok = TOKEN_RCURLY;
                 break;
 
             case '[':
-                t.tok = OWL_TOKEN_LINDEX;
+                t.tok = TOKEN_LINDEX;
                 break;
             case ']':
-                t.tok = OWL_TOKEN_RINDEX;
+                t.tok = TOKEN_RINDEX;
                 break;
 
             case ',':
-                t.tok = OWL_TOKEN_COMMA;
+                t.tok = TOKEN_COMMA;
                 break;
             case ':':
-                t.tok = OWL_TOKEN_COLON;
+                t.tok = TOKEN_COLON;
                 break;
             case ';':
-                t.tok = OWL_TOKEN_SEMICOLON;
+                t.tok = TOKEN_SEMICOLON;
                 break;
             case '=':
-                t.tok = OWL_TOKEN_EQ;
+                t.tok = TOKEN_EQ;
                 break;
 
             default:
-                owl_error_at(ctx,
+                compiler_error_at(ctx,
                         lnum,
                         i - line_first + 1,
                         "invalid character: '%c' ord=%d",
@@ -196,7 +191,7 @@ bool owl_tokenize(owl_context *ctx, string code, vector_owl_token *tokens)
             }
 
             if (comment) {
-                while (i < code.len && code.str[i] != '\n') {
+                while (i < code.size() && code[i] != '\n') {
                     i++;
                 }
                 continue;
@@ -206,19 +201,18 @@ bool owl_tokenize(owl_context *ctx, string code, vector_owl_token *tokens)
         }
 
         if (ctx->debug_lexer) {
-            owl_print_token(ctx, &t);
+            print_token(ctx, t);
         }
 
-        vector_add(tokens, t);
+        tokens->push_back(t);
     }
 
-    owl_token t_eof = {
-            .tok = OWL_TOKEN_EOF,
+    token t_eof = {
+            .tok = TOKEN_EOF,
             .lnum = lnum,
             .cnum = 1,
-            .text = string_empty(),
     };
-    vector_add(tokens, t_eof);
+    tokens->push_back(t_eof);
 
     return true;
 }

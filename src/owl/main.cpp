@@ -15,7 +15,10 @@ int main(int argc, char **argv)
     // ctx.debug_lexer = true;
 
     for (int i = 1; i < argc; i++) {
-        owl::compile_file(&ctx, argv[i]);
+        const char *file_name = argv[i];
+        if (!owl::compile_file(&ctx, file_name)) {
+            fprintf(stderr, "Failed to compile '%s'\n", file_name);
+        }
     }
 
     return ctx.n_errors > 0 ? 1 : 0;

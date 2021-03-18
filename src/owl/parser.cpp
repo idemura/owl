@@ -2,368 +2,346 @@
 
 namespace owl {
 
-typedef struct {
-    owl_context *parent_ctx;
+struct parse_ctx {
+    context *parent_ctx = nullptr;
 
-    const owl_token *p_tokens;
-    size_t n_tokens;
+    const token *p_tokens = nullptr;
+    size_t n_tokens = 0;
 
-    size_t curr;
-} owl_parse_ctx;
+    size_t curr = 0;
+};
 
-static void set_node(owl_node *node, owl_node_t type, const owl_token *t)
+static void set_node(mod_node *node, const token *t)
 {
-    node->type = type;
     node->lnum = t->lnum;
     node->cnum = t->cnum;
     node->text = t->text;
 }
 
-static void set_expr(owl_expr *node, owl_node_t type, const owl_token *t)
-{
-    set_node(&node->base, type, t);
-    node->data_type.type_def = NULL;
-}
-
-static const owl_token *peek_token(owl_parse_ctx *ctx)
+static const token *peek_token(parse_ctx *ctx)
 {
     return &ctx->p_tokens[ctx->curr];
 }
 
-static const owl_token *take_token(owl_parse_ctx *ctx)
+static const token *take_token(parse_ctx *ctx)
 {
     return &ctx->p_tokens[ctx->curr++];
 }
 
-static owl_data_type *owl_parse_data_type(owl_parse_ctx *ctx)
+static mod_type *parse_type(parse_ctx *ctx)
 {
-    const owl_token *t;
+    const token *t = nullptr;
 
-    if ((t = take_token(ctx))->tok != OWL_TOKEN_ID) {
-        owl_error_at(ctx->parent_ctx,
+    if ((t = take_token(ctx))->tok != TOKEN_ID) {
+        compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
                 "data type: type name expected, found %s",
-                owl_token_name(t->tok));
-        return NULL;
+                token_name(t->tok));
+        return nullptr;
     }
 
-    owl_data_type *e = memmgr_allocate_dirty(ctx->parent_ctx->mmc, sizeof(owl_data_type));
-    set_node(&e->base, OWL_MN_EXPR, t);
-    e->name = string_dup(t->text);
+    auto *e = new mod_type();
+    set_node(e, t);
+    e->name = std::string(t->text);
 
     return e;
 }
 
-static owl_expr *owl_parse_expr(owl_parse_ctx *ctx)
+static mod_expr *parse_expr(parse_ctx *ctx)
 {
-    const owl_token *t;
+    const token *t = nullptr;
 
-    if ((t = take_token(ctx))->tok != OWL_TOKEN_NUMBER) {
-        owl_error_at(ctx->parent_ctx,
-                t->lnum,
-                t->cnum,
-                "invalid expression",
-                owl_token_name(t->tok));
-        return NULL;
+    if ((t = take_token(ctx))->tok != TOKEN_NUMBER) {
+        compiler_error_at(
+                ctx->parent_ctx, t->lnum, t->cnum, "invalid expression", token_name(t->tok));
+        return nullptr;
     }
 
-    owl_expr_value *e = memmgr_allocate_dirty(ctx->parent_ctx->mmc, sizeof(owl_expr_value));
-    set_expr(&e->expr, OWL_MN_EXPR, t);
-    e->text = string_dup(t->text);
+    auto *e = new mod_expr_value();
+    set_node(e, t);
+    e->text = std::string(t->text);
 
-    return NULL;
+    return e;
 }
 
-static owl_function *owl_parse_function(owl_parse_ctx *ctx)
+static mod_function *parse_function(parse_ctx *ctx)
 {
-    const owl_token *t;
+    const token *t = nullptr;
 
-    if ((t = take_token(ctx))->tok != OWL_KW_FUNC) {
-        owl_error_at(ctx->parent_ctx, t->lnum, t->cnum, "function expected");
-        return NULL;
+    if ((t = take_token(ctx))->tok != KW_FUNC) {
+        compiler_error_at(ctx->parent_ctx, t->lnum, t->cnum, "function expected");
+        return nullptr;
     }
 
-    if ((t = take_token(ctx))->tok != OWL_TOKEN_ID) {
-        owl_error_at(ctx->parent_ctx,
+    if ((t = take_token(ctx))->tok != TOKEN_ID) {
+        compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
                 "function name expected, found %s",
-                owl_token_name(t->tok));
-        return NULL;
+                token_name(t->tok));
+        return nullptr;
     }
 
-    const owl_token *t_id = t;
+    const token *t_id = t;
 
-    if ((t = take_token(ctx))->tok != OWL_TOKEN_LPAREN) {
-        owl_error_at(ctx->parent_ctx,
+    if ((t = take_token(ctx))->tok != TOKEN_LPAREN) {
+        compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
                 "function argument list: expected '(', found %s",
-                owl_token_name(t->tok));
-        return NULL;
+                token_name(t->tok));
+        return nullptr;
     }
 
     // Arguments
 
-    if ((t = take_token(ctx))->tok != OWL_TOKEN_RPAREN) {
-        owl_error_at(ctx->parent_ctx,
+    if ((t = take_token(ctx))->tok != TOKEN_RPAREN) {
+        compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
                 "function argument list: expected ')', found %s",
-                owl_token_name(t->tok));
-        return NULL;
+                token_name(t->tok));
+        return nullptr;
     }
 
-    const owl_data_type *data_type = NULL;
-    if ((t = peek_token(ctx))->tok == OWL_TOKEN_COLON) {
+    const mod_type *data_type = nullptr;
+    if ((t = peek_token(ctx))->tok == TOKEN_COLON) {
         ctx->curr++;
-        data_type = owl_parse_data_type(ctx);
+        data_type = parse_type(ctx);
         if (!data_type) {
-            return NULL;
+            return nullptr;
         }
     }
 
-    if ((t = take_token(ctx))->tok != OWL_TOKEN_LCURLY) {
-        owl_error_at(ctx->parent_ctx,
+    if ((t = take_token(ctx))->tok != TOKEN_LCURLY) {
+        compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
                 "function: expected '{', found %s",
-                owl_token_name(t->tok));
-        return NULL;
+                token_name(t->tok));
+        return nullptr;
     }
 
-    if ((t = take_token(ctx))->tok != OWL_TOKEN_RCURLY) {
-        owl_error_at(ctx->parent_ctx,
+    if ((t = take_token(ctx))->tok != TOKEN_RCURLY) {
+        compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
                 "function: expected '}', found %s",
-                owl_token_name(t->tok));
-        return NULL;
+                token_name(t->tok));
+        return nullptr;
     }
 
-    owl_function *e = memmgr_allocate_dirty(ctx->parent_ctx->mmc, sizeof(owl_function));
-    set_node(&e->base, OWL_MN_FUNCTION, t_id);
-    e->name = string_dup(t_id->text);
+    auto *e = new mod_function();
+    set_node(e, t_id);
+    e->name = std::string(t_id->text);
 
-    printf("function: %.*s\n", (int) t_id->text.len, t_id->text.str);
+    printf("function: %.*s\n", (int) t_id->text.size(), t_id->text.data());
     return e;
 }
 
-static owl_variable *owl_parse_variable(owl_parse_ctx *ctx)
+static mod_variable *parse_variable(parse_ctx *ctx)
 {
-    const owl_token *t;
+    const token *t = nullptr;
 
     bool auto_var = false;
-    if ((t = peek_token(ctx))->tok == OWL_KW_AUTO) {
+    if ((t = peek_token(ctx))->tok == KW_AUTO) {
         auto_var = true;
         ctx->curr++;
     }
 
-    if ((t = take_token(ctx))->tok != OWL_KW_VAR) {
-        owl_error_at(ctx->parent_ctx, t->lnum, t->cnum, "variable expected");
-        return NULL;
+    if ((t = take_token(ctx))->tok != KW_VAR) {
+        compiler_error_at(ctx->parent_ctx, t->lnum, t->cnum, "variable expected");
+        return nullptr;
     }
 
-    if ((t = take_token(ctx))->tok != OWL_TOKEN_ID) {
-        owl_error_at(ctx->parent_ctx,
+    if ((t = take_token(ctx))->tok != TOKEN_ID) {
+        compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
                 "variable name expected, found %s",
-                owl_token_name(t->tok));
-        return NULL;
+                token_name(t->tok));
+        return nullptr;
     }
 
-    const owl_token *t_id = t;
+    const token *t_id = t;
 
     // Optional type
-    owl_data_type *data_type = NULL;
-    if ((t = peek_token(ctx))->tok == OWL_TOKEN_COLON) {
+    mod_type *data_type = nullptr;
+    if ((t = peek_token(ctx))->tok == TOKEN_COLON) {
         ctx->curr++;
-        data_type = owl_parse_data_type(ctx);
+        data_type = parse_type(ctx);
         if (!data_type) {
-            return NULL;
+            return nullptr;
         }
     }
 
     // Optional initializer
-    owl_expr *init = NULL;
-    if ((t = peek_token(ctx))->tok == OWL_TOKEN_EQ) {
+    mod_expr *init = nullptr;
+    if ((t = peek_token(ctx))->tok == TOKEN_EQ) {
         ctx->curr++;
-        init = owl_parse_expr(ctx);
+        init = parse_expr(ctx);
         if (!init) {
-            return NULL;
+            return nullptr;
         }
     }
 
-    if ((t = take_token(ctx))->tok != OWL_TOKEN_SEMICOLON) {
-        owl_error_at(ctx->parent_ctx,
+    if ((t = take_token(ctx))->tok != TOKEN_SEMICOLON) {
+        compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
                 "variable: ';' expected, found %s",
-                owl_token_name(t->tok));
-        return NULL;
+                token_name(t->tok));
+        return nullptr;
     }
 
-    owl_variable *e = memmgr_allocate_dirty(ctx->parent_ctx->mmc, sizeof(owl_variable));
-    set_node(&e->base, OWL_MN_VARIABLE, t_id);
-    e->name = string_dup(t_id->text);
+    auto *e = new mod_variable();
+    set_node(e, t_id);
+    e->name = std::string(t_id->text);
     e->data_type = data_type;
     e->init = init;
     e->auto_var = auto_var;
 
-    printf("variable: %.*s\n", (int) t_id->text.len, t_id->text.str);
+    printf("variable: %.*s\n", (int) t_id->text.size(), t_id->text.data());
     return e;
 }
 
-static owl_object *owl_parse_object_def(owl_parse_ctx *ctx)
+static mod_object *parse_object_def(parse_ctx *ctx)
 {
-    const owl_token *t;
+    const token *t = nullptr;
 
-    if ((t = take_token(ctx))->tok != OWL_KW_OBJECT) {
-        owl_error_at(ctx->parent_ctx, t->lnum, t->cnum, "object def expected");
-        return NULL;
+    if ((t = take_token(ctx))->tok != KW_OBJECT) {
+        compiler_error_at(ctx->parent_ctx, t->lnum, t->cnum, "object def expected");
+        return nullptr;
     }
 
-    if ((t = take_token(ctx))->tok != OWL_TOKEN_ID) {
-        owl_error_at(ctx->parent_ctx,
+    if ((t = take_token(ctx))->tok != TOKEN_ID) {
+        compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
                 "type name expected, found %s",
-                owl_token_name(t->tok));
-        return NULL;
+                token_name(t->tok));
+        return nullptr;
     }
 
-    const owl_token *t_id = t;
+    const token *t_id = t;
 
-    if ((t = take_token(ctx))->tok != OWL_TOKEN_LCURLY) {
-        owl_error_at(ctx->parent_ctx,
+    if ((t = take_token(ctx))->tok != TOKEN_LCURLY) {
+        compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
                 "object: expected '{', found %s",
-                owl_token_name(t->tok));
-        return NULL;
+                token_name(t->tok));
+        return nullptr;
     }
 
-    while (peek_token(ctx)->tok != OWL_TOKEN_RCURLY) {
-        owl_variable *field = owl_parse_variable(ctx);
+    while (peek_token(ctx)->tok != TOKEN_RCURLY) {
+        auto *field = parse_variable(ctx);
         if (!field) {
-            return NULL;
+            return nullptr;
         }
-        printf("field: %.*s\n", (int) field->name.len, field->name.str);
+        printf("field: %.*s\n", (int) field->name.size(), field->name.data());
     }
 
-    if ((t = take_token(ctx))->tok != OWL_TOKEN_RCURLY) {
-        owl_error_at(ctx->parent_ctx,
+    if ((t = take_token(ctx))->tok != TOKEN_RCURLY) {
+        compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
                 "object: expected '}', found %s",
-                owl_token_name(t->tok));
-        return NULL;
+                token_name(t->tok));
+        return nullptr;
     }
 
-    owl_object *e = memmgr_allocate_dirty(ctx->parent_ctx->mmc, sizeof(owl_object));
-    set_node(&e->base, OWL_MN_OBJECT, t_id);
-    e->name = string_dup(t_id->text);
+    auto *e = new mod_object();
+    set_node(e, t_id);
+    e->name = std::string(t_id->text);
 
-    printf("object: %.*s\n", (int) t_id->text.len, t_id->text.str);
+    printf("object: %.*s\n", (int) t_id->text.size(), t_id->text.data());
     return e;
 }
 
-static bool owl_parse_top_level_def(owl_parse_ctx *ctx, owl_unit *unit)
+static bool parse_top_level_def(parse_ctx *ctx, mod_unit *unit)
 {
-    const owl_token *t = peek_token(ctx);
+    const token *t = peek_token(ctx);
 
     // Look ahead
-    if (t->tok == OWL_KW_AUTO) {
+    if (t->tok == KW_AUTO) {
         t = &ctx->p_tokens[ctx->curr + 1];
     }
 
     switch (t->tok) {
-    case OWL_TOKEN_EOF:
+    case TOKEN_EOF:
         return true;
 
-    case OWL_KW_FUNC: {
-        owl_function *e = owl_parse_function(ctx);
+    case KW_FUNC: {
+        auto *e = parse_function(ctx);
         if (e) {
-            vector_add(&unit->v_function, e);
+            unit->v_function.push_back(e);
         }
-        return e != NULL;
+        return e != nullptr;
     }
 
-    case OWL_KW_VAR: {
-        owl_variable *e = owl_parse_variable(ctx);
+    case KW_VAR: {
+        auto *e = parse_variable(ctx);
         if (e) {
-            vector_add(&unit->v_variable, e);
+            unit->v_variable.push_back(e);
         }
-        return e != NULL;
+        return e != nullptr;
     }
 
-    case OWL_KW_OBJECT: {
-        owl_object *e = owl_parse_object_def(ctx);
+    case KW_OBJECT: {
+        auto *e = parse_object_def(ctx);
         if (e) {
-            vector_add(&unit->v_object, e);
+            unit->v_object.push_back(e);
         }
-        return e != NULL;
+        return e != nullptr;
     }
 
     default:
-        owl_error_at(ctx->parent_ctx,
+        compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
                 "unrecognized top level construct starting with %s",
-                owl_token_name(t->tok));
+                token_name(t->tok));
         return false;
     }
 }
 
-static owl_unit *owl_parse_unit(owl_parse_ctx *ctx)
+static mod_unit *parse_unit(parse_ctx *ctx)
 {
-    owl_unit *unit = memmgr_allocate_dirty(ctx->parent_ctx->mmc, sizeof(owl_unit));
+    auto *unit = new mod_unit();
 
-    unit->base.type = OWL_MN_UNIT;
-    unit->base.lnum = 0;
-    unit->base.cnum = 0;
-    unit->base.text = string_empty();
-
-    vector_init(&unit->v_function);
-    vector_init(&unit->v_variable);
-    vector_init(&unit->v_object);
-    vector_init(&unit->v_struct);
-
-    const owl_token *t = peek_token(ctx);
-    while (t->tok != OWL_TOKEN_EOF && owl_parse_top_level_def(ctx, unit)) {
+    const token *t = peek_token(ctx);
+    while (t->tok != TOKEN_EOF && parse_top_level_def(ctx, unit)) {
         t = peek_token(ctx);
+    }
+
+    if (t->tok != TOKEN_EOF) {
+        delete unit;
+        return nullptr;
     }
 
     return unit;
 }
 
-owl_unit *owl_parse(owl_context *ctx, const owl_token *p_tokens, size_t n_tokens)
+mod_unit *parse(context *ctx, const token *p_tokens, size_t n_tokens)
 {
-    owl_parse_ctx parse_ctx = {};
+    parse_ctx parse_ctx = {};
     parse_ctx.parent_ctx = ctx;
     parse_ctx.p_tokens = p_tokens;
     parse_ctx.n_tokens = n_tokens;
     parse_ctx.curr = 0;
 
-    owl_unit *unit = owl_parse_unit(&parse_ctx);
-
-    return unit;
+    return parse_unit(&parse_ctx);
 }
 
-void owl_destroy_unit(owl_context *ctx, owl_unit *unit)
+void destroy_unit(context *ctx, mod_unit *unit)
 {
     if (!unit) {
         return;
     }
 
-    vector_release(&unit->v_function);
-    vector_release(&unit->v_variable);
-    vector_release(&unit->v_object);
-    vector_release(&unit->v_struct);
-
-    memmgr_release(ctx->mmc, unit);
+    // TODO: Visit and delete
 }
 
 }

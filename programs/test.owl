@@ -1,11 +1,11 @@
-object empty {}
-
 object pt2d {
     var x1 = 0;
     var y2;
     auto var x2 = 0;
     auto var y1;
 }
+
+object empty {}
 
 func f1() {
     # empty

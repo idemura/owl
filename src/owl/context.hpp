@@ -1,28 +1,27 @@
 #ifndef OWL_CONTEXT_HPP
 #define OWL_CONTEXT_HPP
 
-#include <string>
-
 #include <stdio.h>
+
+#include <string>
+#include <string_view>
 
 namespace owl {
 
-struct owl_context {
-    FILE *f_error = nullptr;
-    FILE *f_debug = nullptr;
+struct context {
+    FILE *f_error = stderr;
+    FILE *f_debug = stdout;
 
     int n_errors = 0;
-    const char *file_name = nullptr;
-
-    memmgr_ctx *mmc;
+    std::string file_name;
 
     // Parameters
     bool debug_lexer;
 };
 
-void owl_error_va(owl_context *ctx, int lnum, int cnum, const char *format, va_list va);
-void owl_error(owl_context *ctx, const char *format, ...);
-void owl_error_at(owl_context *ctx, int lnum, int cnum, const char *format, ...);
+void compiler_error_va(context *ctx, int lnum, int cnum, const char *format, va_list va);
+void compiler_error(context *ctx, const char *format, ...);
+void compiler_error_at(context *ctx, int lnum, int cnum, const char *format, ...);
 
 }
 

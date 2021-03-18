@@ -1,9 +1,11 @@
-#ifndef OWL_LEXER_HPP
-#define OWL_LEXER_HPP
+#ifndef LEXER_HPP
+#define LEXER_HPP
+
+#include "owl/context.hpp"
 
 #include <string>
+#include <string_view>
 #include <vector>
-#include "owl/context.hpp"
 
 /**
  * Lexer. Converts text into a vector of tokens.
@@ -11,52 +13,50 @@
 
 namespace owl {
 
-typedef enum {
-    OWL_TOKEN_EOF, // end-of-file
+enum token_t {
+    TOKEN_EOF, // end-of-file
 
-    OWL_TOKEN_ID,
+    TOKEN_ID,
 
-    OWL_KW_AUTO,
-    OWL_KW_DO,
-    OWL_KW_IF,
-    OWL_KW_FUNC,
-    OWL_KW_OBJECT,
-    OWL_KW_RETURN,
-    OWL_KW_STRUCT,
-    OWL_KW_VAR,
+    KW_AUTO,
+    KW_DO,
+    KW_IF,
+    KW_FUNC,
+    KW_OBJECT,
+    KW_RETURN,
+    KW_STRUCT,
+    KW_VAR,
 
-    OWL_TOKEN_NUMBER,
-    OWL_TOKEN_STRING,
+    TOKEN_NUMBER,
+    TOKEN_STRING,
 
-    OWL_TOKEN_LPAREN, // (
-    OWL_TOKEN_RPAREN, // )
+    TOKEN_LPAREN, // (
+    TOKEN_RPAREN, // )
 
-    OWL_TOKEN_LCURLY, // {
-    OWL_TOKEN_RCURLY, // }
+    TOKEN_LCURLY, // {
+    TOKEN_RCURLY, // }
 
-    OWL_TOKEN_LINDEX, // [
-    OWL_TOKEN_RINDEX, // ]
+    TOKEN_LINDEX, // [
+    TOKEN_RINDEX, // ]
 
-    OWL_TOKEN_COMMA, // ,
-    OWL_TOKEN_COLON, // :
-    OWL_TOKEN_SEMICOLON, // ;
-    OWL_TOKEN_EQ, // =
+    TOKEN_COMMA, // ,
+    TOKEN_COLON, // :
+    TOKEN_SEMICOLON, // ;
+    TOKEN_EQ, // =
 
-    OWL_TOKEN_SIZE
-} owl_token_t;
+    TOKEN_SIZE
+};
 
-typedef struct {
-    owl_token_t tok;
-    int lnum;
-    int cnum;
-    string text;
-} owl_token;
+struct token {
+    token_t tok = TOKEN_EOF;
+    int lnum = 0;
+    int cnum = 0;
+    std::string_view text;
+};
 
-typedef def_vector(owl_token) vector_owl_token;
-
-bool owl_tokenize(owl_context *ctx, string code, vector_owl_token *tokens);
-const char *owl_token_name(owl_token_t tok);
-void owl_print_token(owl_context *ctx, const owl_token *t);
+bool tokenize(context *ctx, std::string_view code, std::vector<token> *tokens);
+const char *token_name(token_t tok);
+void print_token(context *ctx, const token &t);
 
 }
 

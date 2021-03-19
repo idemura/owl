@@ -28,6 +28,6 @@ struct visitor {
 void visit_children(const visitor *v, void *bind, mod_node *node);
 mod_node *visit(const visitor *v, void *bind, mod_node *node);
 
-}
+} // owl
 
 #endif

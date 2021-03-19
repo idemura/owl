@@ -7,6 +7,9 @@ void mod_function::destroy_rec()
     if (data_type) {
         data_type->destroy_rec();
     }
+    if (body) {
+        body->destroy_rec();
+    }
     delete this;
 }
 
@@ -30,6 +33,11 @@ void mod_object::destroy_rec()
 }
 
 void mod_struct::destroy_rec()
+{
+    delete this;
+}
+
+void mod_body::destroy_rec()
 {
     delete this;
 }
@@ -74,4 +82,4 @@ void destroy_rec(mod_node *node)
     }
 }
 
-}
+} // owl

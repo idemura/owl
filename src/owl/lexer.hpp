@@ -58,6 +58,6 @@ bool tokenize(context *ctx, std::string_view code, std::vector<token> *tokens);
 const char *token_name(token_t tok);
 void print_token(context *ctx, const token &t);
 
-}
+} // owl
 
 #endif

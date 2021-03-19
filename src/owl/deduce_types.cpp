@@ -46,6 +46,13 @@ static mod_node *visit_type(const visitor *v, deduce_ctx *dt_ctx, mod_type *e)
     return nullptr;
 }
 
+static mod_node *visit_body(const visitor *v, deduce_ctx *dt_ctx, mod_body *e)
+{
+    std::cout << "visit body\n";
+    visit_children(v, dt_ctx, e);
+    return nullptr;
+}
+
 static mod_node *visit_expr(const visitor *v, deduce_ctx *dt_ctx, mod_expr *e)
 {
     std::cout << "visit expr\n";
@@ -77,4 +84,4 @@ bool deduce_types(context *ctx, mod_node *node)
     return true;
 }
 
-}
+} // owl

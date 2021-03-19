@@ -12,6 +12,6 @@ namespace owl {
 
 mod_unit *parse(context *ctx, const token *p_tokens, size_t n_tokens);
 
-}
+} // owl
 
 #endif

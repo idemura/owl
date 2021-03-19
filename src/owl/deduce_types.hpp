@@ -13,6 +13,6 @@ struct mod_node;
 
 bool deduce_types(context *ctx, mod_node *node);
 
-}
+} // owl
 
 #endif

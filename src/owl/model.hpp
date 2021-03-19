@@ -18,10 +18,20 @@ enum mod_node_t {
     MOD_OBJECT,
     MOD_STRUCT,
     MOD_TYPE,
+    MOD_BODY,
     MOD_EXPR,
     MOD_UNIT,
     MOD_SIZE,
 };
+
+struct mod_function;
+struct mod_variable;
+struct mod_object;
+struct mod_struct;
+struct mod_type;
+struct mod_body;
+struct mod_expr;
+struct mod_unit;
 
 /**
  * Node base (contained in every node)
@@ -75,6 +85,7 @@ struct mod_expr: mod_node {
 struct mod_function: mod_node {
     std::string name;
     mod_type *data_type = nullptr;
+    mod_body *body = nullptr;
 
     mod_function(): mod_node(MOD_FUNCTION) {}
     void destroy_rec() override;
@@ -117,6 +128,14 @@ struct mod_struct: mod_node {
 };
 
 /**
+ * Function body (list of statements)
+ */
+struct mod_body: mod_node {
+    mod_body(): mod_node(MOD_BODY) {}
+    void destroy_rec() override;
+};
+
+/**
  * Function application
  */
 struct mod_expr_func: mod_expr {
@@ -145,6 +164,6 @@ struct mod_unit: mod_node {
 
 void destroy_rec(mod_node *node);
 
-}
+} // owl
 
 #endif

@@ -23,6 +23,6 @@ void compiler_error_va(context *ctx, int lnum, int cnum, const char *format, va_
 void compiler_error(context *ctx, const char *format, ...);
 void compiler_error_at(context *ctx, int lnum, int cnum, const char *format, ...);
 
-}
+} // owl
 
 #endif

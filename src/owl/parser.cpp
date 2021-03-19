@@ -67,6 +67,37 @@ static mod_expr *parse_expr(parse_ctx *ctx)
     return e;
 }
 
+static mod_body *parse_body(parse_ctx *ctx, const char *parent_entity)
+{
+    const token *t = nullptr;
+
+    auto *e = new mod_body();
+
+    if ((t = take_token(ctx))->tok != TOKEN_LCURLY) {
+        compiler_error_at(ctx->parent_ctx,
+                t->lnum,
+                t->cnum,
+                "s: expected '{', found %s",
+                parent_entity,
+                token_name(t->tok));
+        destroy_rec(e);
+        return nullptr;
+    }
+
+    if ((t = take_token(ctx))->tok != TOKEN_RCURLY) {
+        compiler_error_at(ctx->parent_ctx,
+                t->lnum,
+                t->cnum,
+                "s: expected '}', found %s",
+                parent_entity,
+                token_name(t->tok));
+        destroy_rec(e);
+        return nullptr;
+    }
+
+    return e;
+}
+
 static mod_function *parse_function(parse_ctx *ctx)
 {
     const token *t = nullptr;
@@ -120,25 +151,7 @@ static mod_function *parse_function(parse_ctx *ctx)
         }
     }
 
-    if ((t = take_token(ctx))->tok != TOKEN_LCURLY) {
-        compiler_error_at(ctx->parent_ctx,
-                t->lnum,
-                t->cnum,
-                "function: expected '{', found %s",
-                token_name(t->tok));
-        destroy_rec(e);
-        return nullptr;
-    }
-
-    if ((t = take_token(ctx))->tok != TOKEN_RCURLY) {
-        compiler_error_at(ctx->parent_ctx,
-                t->lnum,
-                t->cnum,
-                "function: expected '}', found %s",
-                token_name(t->tok));
-        destroy_rec(e);
-        return nullptr;
-    }
+    parse_body(ctx, "function");
 
     printf("function: %s\n", e->name.data());
     return e;
@@ -337,4 +350,4 @@ mod_unit *parse(context *ctx, const token *p_tokens, size_t n_tokens)
     return parse_unit(&parse_ctx);
 }
 
-}
+} // owl

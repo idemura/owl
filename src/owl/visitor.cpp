@@ -51,6 +51,10 @@ static void children_of_type(const visitor *v, void *bind, mod_type *node)
 {
 }
 
+static void children_of_body(const visitor *v, void *bind, mod_body *node)
+{
+}
+
 static void children_of_expr(const visitor *v, void *bind, mod_expr *node)
 {
     if (node->data_type) {
@@ -98,6 +102,7 @@ static visit_children_fn children_of[MOD_SIZE] = {
         (visit_children_fn) &children_of_object,
         (visit_children_fn) &children_of_struct,
         (visit_children_fn) &children_of_type,
+        (visit_children_fn) &children_of_body,
         (visit_children_fn) &children_of_expr,
         (visit_children_fn) &children_of_unit,
 };
@@ -129,4 +134,4 @@ mod_node *visit(const visitor *v, void *bind, mod_node *node)
     }
 }
 
-}
+} // owl

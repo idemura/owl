@@ -38,4 +38,4 @@ void compiler_error(context *ctx, const char *format, ...)
     va_end(va);
 }
 
-}
+} // owl

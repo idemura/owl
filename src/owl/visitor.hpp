@@ -16,17 +16,17 @@ namespace owl {
 
 struct visitor;
 
-typedef void (*visitor_fn)(visitor *v, void *bind, mod_node *node);
+typedef mod_node *(*visit_fn)(const visitor *v, void *bind, mod_node *node);
 
 struct visitor {
-    context *ctx = nullptr;
-    visitor_fn visit[MOD_SIZE] = {};
+    context *root_ctx = nullptr;
+    visit_fn visit[MOD_SIZE] = {};
 
-    explicit visitor(context *c);
+    explicit visitor(context *ctx);
 };
 
-void visit_children(visitor *v, void *bind, mod_node *node);
-void visit(visitor *v, void *bind, mod_node *node);
+void visit_children(const visitor *v, void *bind, mod_node *node);
+mod_node *visit(const visitor *v, void *bind, mod_node *node);
 
 }
 

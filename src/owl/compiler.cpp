@@ -1,5 +1,6 @@
 #include "owl/compiler.hpp"
 
+#include "owl/deduce_types.hpp"
 #include "owl/parser.hpp"
 
 namespace owl {
@@ -87,7 +88,7 @@ bool compile_string(context *ctx, std::string_view code)
     if (tokenize(ctx, code, &tokens)) {
         unit = parse(ctx, tokens.data(), tokens.size());
         if (unit) {
-            result = true;
+            result = deduce_types(ctx, unit);
         }
     }
 

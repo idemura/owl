@@ -1,6 +1,6 @@
 #include "owl/parser.hpp"
 
-#include <memory>
+#include <iostream>
 
 namespace owl {
 
@@ -30,11 +30,21 @@ static const token *take_token(parse_ctx *ctx)
     return &ctx->p_tokens[ctx->curr++];
 }
 
+static bool is_word(const token *t, const char *word)
+{
+    return t->tok == TOKEN_WORD && t->text == word;
+}
+
+static bool is_identifier(const token *t)
+{
+    return t->tok == TOKEN_WORD && !is_keyword(t->text);
+}
+
 static mod_type *parse_type(parse_ctx *ctx)
 {
     const token *t = nullptr;
 
-    if ((t = take_token(ctx))->tok != TOKEN_ID) {
+    if (!is_identifier(t = take_token(ctx))) {
         compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
@@ -67,28 +77,85 @@ static mod_expr *parse_expr(parse_ctx *ctx)
     return e;
 }
 
+static mod_stmt_return *parse_return(parse_ctx *ctx)
+{
+    const token *t = take_token(ctx);
+
+    if (!is_word(t, KW_RETURN)) {
+        compiler_error_at(ctx->parent_ctx,
+                t->lnum,
+                t->cnum,
+                "return statement expected, found %s",
+                token_name(t->tok));
+        return nullptr;
+    }
+
+    auto *e = new mod_stmt_return();
+    set_node(e, t);
+
+    e->expr = parse_expr(ctx);
+    if (!e->expr) {
+        destroy_rec(e);
+        return nullptr;
+    }
+
+    return e;
+}
+
 static mod_body *parse_body(parse_ctx *ctx, const char *parent_entity)
 {
     const token *t = nullptr;
-
     auto *e = new mod_body();
 
     if ((t = take_token(ctx))->tok != TOKEN_LCURLY) {
         compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
-                "s: expected '{', found %s",
+                "%s: expected '{', found %s",
                 parent_entity,
                 token_name(t->tok));
         destroy_rec(e);
         return nullptr;
     }
 
+    while ((t = peek_token(ctx))->tok != TOKEN_RCURLY) {
+        mod_node *stmt = nullptr;
+        bool recognized = false;
+        if (t->tok == TOKEN_WORD) {
+            switch (t->text[0]) {
+            case 'r':
+                if (t->text == KW_RETURN) {
+                    stmt = parse_return(ctx);
+                    recognized = true;
+                }
+                break;
+            }
+        }
+
+        if (!recognized) {
+            // TODO: Parse expression
+            assert(false);
+        }
+
+        if (!stmt) {
+            compiler_error_at(ctx->parent_ctx,
+                    t->lnum,
+                    t->cnum,
+                    "%s: statement expected, found %s",
+                    parent_entity,
+                    token_name(t->tok));
+            destroy_rec(e);
+            return nullptr;
+        }
+
+        e->statements.push_back(e);
+    }
+
     if ((t = take_token(ctx))->tok != TOKEN_RCURLY) {
         compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
-                "s: expected '}', found %s",
+                "%s: expected '}', found %s",
                 parent_entity,
                 token_name(t->tok));
         destroy_rec(e);
@@ -102,12 +169,12 @@ static mod_function *parse_function(parse_ctx *ctx)
 {
     const token *t = nullptr;
 
-    if ((t = take_token(ctx))->tok != KW_FUNC) {
+    if (!is_word(t = take_token(ctx), KW_FUNC)) {
         compiler_error_at(ctx->parent_ctx, t->lnum, t->cnum, "function expected");
         return nullptr;
     }
 
-    if ((t = take_token(ctx))->tok != TOKEN_ID) {
+    if (!is_identifier(t = take_token(ctx))) {
         compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
@@ -151,9 +218,13 @@ static mod_function *parse_function(parse_ctx *ctx)
         }
     }
 
-    parse_body(ctx, "function");
+    e->body = parse_body(ctx, "function");
+    if (!e->body) {
+        destroy_rec(e);
+        return nullptr;
+    }
 
-    printf("function: %s\n", e->name.data());
+    std::cout << "function: " << e->name << "\n";
     return e;
 }
 
@@ -162,17 +233,17 @@ static mod_variable *parse_variable(parse_ctx *ctx)
     const token *t = nullptr;
 
     bool auto_var = false;
-    if ((t = peek_token(ctx))->tok == KW_AUTO) {
+    if (is_word(t = peek_token(ctx), KW_AUTO)) {
         auto_var = true;
         ctx->curr++;
     }
 
-    if ((t = take_token(ctx))->tok != KW_VAR) {
+    if (!is_word(t = take_token(ctx), KW_VAR)) {
         compiler_error_at(ctx->parent_ctx, t->lnum, t->cnum, "variable expected");
         return nullptr;
     }
 
-    if ((t = take_token(ctx))->tok != TOKEN_ID) {
+    if ((t = take_token(ctx))->tok != TOKEN_WORD) {
         compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
@@ -216,7 +287,7 @@ static mod_variable *parse_variable(parse_ctx *ctx)
         return nullptr;
     }
 
-    printf("variable: %s\n", e->name.data());
+    std::cout << "variable: " << e->name << "\n";
     return e;
 }
 
@@ -224,12 +295,12 @@ static mod_object *parse_object_def(parse_ctx *ctx)
 {
     const token *t = nullptr;
 
-    if ((t = take_token(ctx))->tok != KW_OBJECT) {
+    if (!is_word(t = take_token(ctx), KW_OBJECT)) {
         compiler_error_at(ctx->parent_ctx, t->lnum, t->cnum, "object def expected");
         return nullptr;
     }
 
-    if ((t = take_token(ctx))->tok != TOKEN_ID) {
+    if ((t = take_token(ctx))->tok != TOKEN_WORD) {
         compiler_error_at(ctx->parent_ctx,
                 t->lnum,
                 t->cnum,
@@ -271,7 +342,7 @@ static mod_object *parse_object_def(parse_ctx *ctx)
         return nullptr;
     }
 
-    printf("object: %s\n", e->name.data());
+    std::cout << "object: " << e->name << "\n";
     return e;
 }
 
@@ -280,46 +351,57 @@ static bool parse_top_level_def(parse_ctx *ctx, mod_unit *unit)
     const token *t = peek_token(ctx);
 
     // Look ahead
-    if (t->tok == KW_AUTO) {
+    int adv = 0;
+    if (is_word(t, KW_AUTO)) {
         t = &ctx->p_tokens[ctx->curr + 1];
+        adv++;
     }
 
-    switch (t->tok) {
-    case TOKEN_EOF:
-        return true;
+    if (t->tok == TOKEN_EOF) {
+        return adv == 0;
+    }
 
-    case KW_FUNC: {
-        auto *e = parse_function(ctx);
-        if (e) {
-            unit->functions.push_back(e);
+    // Step back where we stared after we found expected keyword position
+    ctx->curr -= adv;
+
+    switch (t->text[0]) {
+    case KW_FUNC[0]:
+        if (t->text == KW_FUNC) {
+            auto *e = parse_function(ctx);
+            if (e) {
+                unit->functions.push_back(e);
+            }
+            return e != nullptr;
         }
-        return e != nullptr;
-    }
+        break;
 
-    case KW_VAR: {
-        auto *e = parse_variable(ctx);
-        if (e) {
-            unit->variables.push_back(e);
+    case KW_VAR[0]:
+        if (t->text == KW_VAR) {
+            auto *e = parse_variable(ctx);
+            if (e) {
+                unit->variables.push_back(e);
+            }
+            return e != nullptr;
         }
-        return e != nullptr;
-    }
+        break;
 
-    case KW_OBJECT: {
-        auto *e = parse_object_def(ctx);
-        if (e) {
-            unit->objects.push_back(e);
+    case KW_OBJECT[0]:
+        if (t->text == KW_OBJECT) {
+            auto *e = parse_object_def(ctx);
+            if (e) {
+                unit->objects.push_back(e);
+            }
+            return e != nullptr;
         }
-        return e != nullptr;
+        break;
     }
 
-    default:
-        compiler_error_at(ctx->parent_ctx,
-                t->lnum,
-                t->cnum,
-                "unrecognized top level construct starting with %s",
-                token_name(t->tok));
-        return false;
-    }
+    compiler_error_at(ctx->parent_ctx,
+            t->lnum,
+            t->cnum,
+            "unrecognized top level construct starting with %s",
+            token_name(t->tok));
+    return false;
 }
 
 static mod_unit *parse_unit(parse_ctx *ctx)

@@ -53,9 +53,23 @@ static mod_node *visit_body(const visitor *v, deduce_ctx *dt_ctx, mod_body *e)
     return nullptr;
 }
 
-static mod_node *visit_expr(const visitor *v, deduce_ctx *dt_ctx, mod_expr *e)
+static mod_node *visit_stmt_return(const visitor *v, deduce_ctx *dt_ctx, mod_stmt_return *e)
 {
-    std::cout << "visit expr\n";
+    std::cout << "visit stmt return\n";
+    visit_children(v, dt_ctx, e);
+    return nullptr;
+}
+
+static mod_node *visit_expr_apply(const visitor *v, deduce_ctx *dt_ctx, mod_expr_apply *e)
+{
+    std::cout << "visit expr apply\n";
+    visit_children(v, dt_ctx, e);
+    return nullptr;
+}
+
+static mod_node *visit_expr_value(const visitor *v, deduce_ctx *dt_ctx, mod_expr_value *e)
+{
+    std::cout << "visit expr value\n";
     visit_children(v, dt_ctx, e);
     return nullptr;
 }
@@ -75,7 +89,10 @@ bool deduce_types(context *ctx, mod_node *node)
     v.visit[MOD_OBJECT] = (visit_fn) visit_object;
     v.visit[MOD_STRUCT] = (visit_fn) visit_struct;
     v.visit[MOD_TYPE] = (visit_fn) visit_type;
-    v.visit[MOD_EXPR] = (visit_fn) visit_expr;
+    v.visit[MOD_BODY] = (visit_fn) visit_body;
+    v.visit[MOD_STMT_RETURN] = (visit_fn) visit_stmt_return;
+    v.visit[MOD_EXPR_APPLY] = (visit_fn) visit_expr_apply;
+    v.visit[MOD_EXPR_VALUE] = (visit_fn) visit_expr_value;
     v.visit[MOD_UNIT] = (visit_fn) visit_unit;
 
     deduce_ctx dt_ctx;

@@ -19,7 +19,9 @@ enum mod_node_t {
     MOD_STRUCT,
     MOD_TYPE,
     MOD_BODY,
-    MOD_EXPR,
+    MOD_STMT_RETURN,
+    MOD_EXPR_APPLY,
+    MOD_EXPR_VALUE,
     MOD_UNIT,
     MOD_SIZE,
 };
@@ -30,7 +32,9 @@ struct mod_object;
 struct mod_struct;
 struct mod_type;
 struct mod_body;
-struct mod_expr;
+struct mod_stmt_return;
+struct mod_expr_apply;
+struct mod_expr_value;
 struct mod_unit;
 
 /**
@@ -50,6 +54,24 @@ struct mod_node {
 };
 
 /**
+ * Base of every mod_expr_* data structure
+ */
+struct mod_expr: mod_node {
+    mod_type *data_type = nullptr;
+
+    explicit mod_expr(mod_node_t type): mod_node(type) {}
+    void destroy_rec() override;
+};
+
+/**
+ * Generic statement
+ */
+struct mod_stmt: mod_node {
+    explicit mod_stmt(mod_node_t type): mod_node(type) {}
+    void destroy_rec() override;
+};
+
+/**
  * Type definition.
  */
 struct type_definition {
@@ -57,26 +79,6 @@ struct type_definition {
 
     bool is_builtin = false;
     bool is_ref = false;
-};
-
-/**
- * Expression type, links to the type definition.
- */
-struct mod_type: mod_node {
-    std::string name;
-    type_definition *type_def = nullptr;
-
-    mod_type(): mod_node(MOD_TYPE) {}
-};
-
-/**
- * Base of every mod_expr_* data structure
- */
-struct mod_expr: mod_node {
-    mod_type *data_type = nullptr;
-
-    mod_expr(): mod_node(MOD_EXPR) {}
-    void destroy_rec() override;
 };
 
 /**
@@ -128,20 +130,44 @@ struct mod_struct: mod_node {
 };
 
 /**
+ * Expression type, links to the type definition.
+ */
+struct mod_type: mod_node {
+    std::string name;
+    type_definition *type_def = nullptr;
+
+    mod_type(): mod_node(MOD_TYPE) {}
+    void destroy_rec() override;
+};
+
+/**
  * Function body (list of statements)
  */
 struct mod_body: mod_node {
+    std::vector<mod_node *> statements;
+
     mod_body(): mod_node(MOD_BODY) {}
+    void destroy_rec() override;
+};
+
+/**
+ * "return" statement
+ */
+struct mod_stmt_return: mod_stmt {
+    mod_expr *expr = nullptr;
+
+    mod_stmt_return(): mod_stmt(MOD_STMT_RETURN) {}
     void destroy_rec() override;
 };
 
 /**
  * Function application
  */
-struct mod_expr_func: mod_expr {
+struct mod_expr_apply: mod_expr {
     std::string name;
     std::vector<mod_variable *> args;
 
+    mod_expr_apply(): mod_expr(MOD_EXPR_APPLY) {}
     void destroy_rec() override;
 };
 
@@ -150,6 +176,9 @@ struct mod_expr_func: mod_expr {
  */
 struct mod_expr_value: mod_expr {
     std::string text;
+
+    mod_expr_value(): mod_expr(MOD_EXPR_VALUE) {}
+    void destroy_rec() override;
 };
 
 struct mod_unit: mod_node {

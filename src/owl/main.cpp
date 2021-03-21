@@ -21,5 +21,8 @@ int main(int argc, char **argv)
         }
     }
 
+    if (ctx.n_errors == 0) {
+        fprintf(stdout, "Compilation successful\n");
+    }
     return ctx.n_errors > 0 ? 1 : 0;
 }

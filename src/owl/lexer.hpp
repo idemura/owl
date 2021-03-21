@@ -13,19 +13,19 @@
 
 namespace owl {
 
+#define KW_AUTO "auto"
+#define KW_DO "do"
+#define KW_IF "if"
+#define KW_FUNC "func"
+#define KW_OBJECT "object"
+#define KW_RETURN "return"
+#define KW_STRUCT "struct"
+#define KW_VAR "var"
+
 enum token_t {
     TOKEN_EOF, // end-of-file
 
-    TOKEN_ID,
-
-    KW_AUTO,
-    KW_DO,
-    KW_IF,
-    KW_FUNC,
-    KW_OBJECT,
-    KW_RETURN,
-    KW_STRUCT,
-    KW_VAR,
+    TOKEN_WORD,
 
     TOKEN_NUMBER,
     TOKEN_STRING,
@@ -57,6 +57,7 @@ struct token {
 bool tokenize(context *ctx, std::string_view code, std::vector<token> *tokens);
 const char *token_name(token_t tok);
 void print_token(context *ctx, const token &t);
+bool is_keyword(std::string_view word);
 
 } // owl
 

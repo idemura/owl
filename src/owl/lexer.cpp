@@ -4,66 +4,12 @@
 
 namespace owl {
 
-static token_t translate_word(std::string_view w)
-{
-    switch (w[0]) {
-    case 'a':
-        if (w == "auto") {
-            return KW_AUTO;
-        }
-        break;
-    case 'd':
-        if (w == "do") {
-            return KW_DO;
-        }
-        break;
-    case 'i':
-        if (w == "if") {
-            return KW_IF;
-        }
-        break;
-    case 'f':
-        if (w == "func") {
-            return KW_FUNC;
-        }
-        break;
-    case 'o':
-        if (w == "object") {
-            return KW_OBJECT;
-        }
-        break;
-    case 'r':
-        if (w == "return") {
-            return KW_RETURN;
-        }
-        break;
-    case 's':
-        if (w == "struct") {
-            return KW_STRUCT;
-        }
-    case 'v':
-        if (w == "var") {
-            return KW_VAR;
-        }
-        break;
-    }
-    return TOKEN_ID;
-}
-
 const char *token_name(token_t tok)
 {
     // clang-format off
     static const char *names[TOKEN_SIZE] = {
             "<EOF>",
-            "ident",
-            "auto",
-            "do",
-            "if",
-            "func",
-            "object",
-            "return",
-            "struct",
-            "var",
+            "word",
             "number",
             "string",
             "'('",
@@ -85,7 +31,7 @@ void print_token(context *ctx, const token &t)
 {
     fprintf(ctx->f_debug, "%s @%i, %i", token_name(t.tok), t.lnum, t.cnum);
     switch (t.tok) {
-    case TOKEN_ID:
+    case TOKEN_WORD:
     case TOKEN_NUMBER:
     case TOKEN_STRING:
         fprintf(ctx->f_debug, ": %.*s", (int) t.text.size(), t.text.data());
@@ -120,7 +66,7 @@ bool tokenize(context *ctx, std::string_view code, std::vector<token> *tokens)
             } while (i < code.size() && (chr == '_' || isalnum(code[i])));
 
             t.text = code.substr(first, i - first);
-            t.tok = translate_word(t.text);
+            t.tok = TOKEN_WORD;
         } else if (isdigit(chr)) {
             do {
                 i++;
@@ -215,6 +161,22 @@ bool tokenize(context *ctx, std::string_view code, std::vector<token> *tokens)
     tokens->push_back(t_eof);
 
     return true;
+}
+
+bool is_keyword(std::string_view word)
+{
+    // TODO: Optimize by looking into first char
+
+    // clang-format off
+    return word == KW_AUTO
+            || word == KW_DO
+            || word == KW_IF
+            || word == KW_FUNC
+            || word == KW_OBJECT
+            || word == KW_RETURN
+            || word == KW_STRUCT
+            || word == KW_VAR;
+    // clang-format on
 }
 
 } // owl

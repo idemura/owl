@@ -2,7 +2,7 @@
 
 namespace owl {
 
-static void no_children(const visitor *v, void *bind, mod_node *node)
+static void children_of_null(const visitor *v, void *bind, mod_node *node)
 {
 }
 
@@ -55,7 +55,27 @@ static void children_of_body(const visitor *v, void *bind, mod_body *node)
 {
 }
 
-static void children_of_expr(const visitor *v, void *bind, mod_expr *node)
+static void children_of_stmt_return(const visitor *v, void *bind, mod_stmt_return *node)
+{
+    if (node->expr) {
+        auto *r = visit(v, bind, node->expr);
+        if (r) {
+            node->expr = (mod_expr *) r;
+        }
+    }
+}
+
+static void children_of_expr_apply(const visitor *v, void *bind, mod_expr_apply *node)
+{
+    if (node->data_type) {
+        auto *r = visit(v, bind, node->data_type);
+        if (r) {
+            node->data_type = (mod_type *) r;
+        }
+    }
+}
+
+static void children_of_expr_value(const visitor *v, void *bind, mod_expr_value *node)
 {
     if (node->data_type) {
         auto *r = visit(v, bind, node->data_type);
@@ -96,14 +116,16 @@ static void children_of_unit(const visitor *v, void *bind, mod_unit *node)
 typedef void (*visit_children_fn)(const visitor *v, void *bind, mod_node *node);
 
 static visit_children_fn children_of[MOD_SIZE] = {
-        &no_children,
+        (visit_children_fn) &children_of_null,
         (visit_children_fn) &children_of_function,
         (visit_children_fn) &children_of_variable,
         (visit_children_fn) &children_of_object,
         (visit_children_fn) &children_of_struct,
         (visit_children_fn) &children_of_type,
         (visit_children_fn) &children_of_body,
-        (visit_children_fn) &children_of_expr,
+        (visit_children_fn) &children_of_stmt_return,
+        (visit_children_fn) &children_of_expr_apply,
+        (visit_children_fn) &children_of_expr_value,
         (visit_children_fn) &children_of_unit,
 };
 
